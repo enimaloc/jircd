@@ -4,6 +4,7 @@ import com.github.enimaloc.irc.jircd.api.Channel;
 import com.github.enimaloc.irc.jircd.api.JIRCD;
 import com.github.enimaloc.irc.jircd.api.ServerSettings;
 import com.github.enimaloc.irc.jircd.api.User;
+import com.github.enimaloc.irc.jircd.internal.commands.connection.*;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.util.*;
@@ -25,6 +26,12 @@ public class JIRCDImpl extends Thread implements JIRCD {
         super("Server-Receiver");
         this.settings = settings;
         this.commands.addAll(Arrays.asList(
+                // Connection
+                new PassCommand(),
+                new NickCommand(),
+                new UserCommand(),
+                new OperCommand(),
+                new QuitCommand()
         ));
 
         supportAttribute = new SupportAttribute(
