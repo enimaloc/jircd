@@ -145,23 +145,22 @@ public class UserImpl extends Thread implements User {
 
         int min = -1;
         for (Object cmd : server.commands()) {
-            Class<?> clazz        = cmd.getClass();
-            String   nameByAClazz = "__DEFAULT__";
-            boolean  asTrailing   = false;
+            Class<?> clazz         = cmd.getClass();
+            String   nameByAClazz  = "__DEFAULT__";
+            boolean  clazzTrailing = false;
             if (clazz.isAnnotationPresent(Command.class)) {
                 Command annotation = clazz.getAnnotation(Command.class);
-                nameByAClazz = annotation.name();
-                asTrailing   = annotation.trailing();
+                nameByAClazz  = annotation.name();
+                clazzTrailing = annotation.trailing();
             }
             if (nameByAClazz.equals("__DEFAULT__")) {
                 nameByAClazz = clazz.getSimpleName();
             }
             for (Method method : clazz.getDeclaredMethods()) {
-                String nameByAMethod = "__DEFAULT__";
                 if (method.isAnnotationPresent(Command.class)) {
-                    Command annotation = method.getAnnotation(Command.class);
-                    nameByAMethod = annotation.name();
-                    asTrailing    = asTrailing || annotation.trailing();
+                    Command annotation    = method.getAnnotation(Command.class);
+                    String  nameByAMethod = annotation.name();
+                    boolean asTrailing    = clazzTrailing || annotation.trailing();
                     if (nameByAMethod.equals("__DEFAULT__")) {
                         nameByAMethod = nameByAClazz;
                     }
@@ -173,7 +172,11 @@ public class UserImpl extends Thread implements User {
                             args[0] = this;
                             System.arraycopy(middle, 0, args, 1, middle.length);
                             if (asTrailing) {
-                                args[args.length - 1] = trailing;
+                                if (trailing != null) {
+                                    args[args.length - 1] = trailing;
+                                } else {
+                                    continue;
+                                }
                             }
                             method.invoke(cmd, args);
                             return;
