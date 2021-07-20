@@ -5,17 +5,24 @@ import java.util.List;
 import java.util.Optional;
 
 public interface Channel {
+
+    Optional<Topic> topic();
+
     void broadcast(String message);
 
     String name();
 
-    Optional<String> topic();
+    void topic(Topic topic);
 
-    void topic(String topic);
+    Optional<String> prefix(User user);
 
     ChannelImpl.Modes modes();
 
     List<User> bans();
 
     List<User> users();
+
+    record Topic(String topic, User user) {
+        public static final Topic EMPTY = new Topic(null, null);
+    }
 }

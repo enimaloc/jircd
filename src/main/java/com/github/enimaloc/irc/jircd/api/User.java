@@ -5,6 +5,8 @@ import com.github.enimaloc.irc.jircd.internal.UserState;
 import java.util.List;
 
 public interface User {
+    void send(Message message);
+
     void send(String message);
 
     void terminate(String reason);
@@ -16,6 +18,4 @@ public interface User {
     JIRCD server();
 
     List<Channel> channels();
-
-    String prefix();
 }

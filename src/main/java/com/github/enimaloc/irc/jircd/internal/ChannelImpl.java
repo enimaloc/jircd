@@ -5,12 +5,13 @@ import com.github.enimaloc.irc.jircd.api.User;
 import java.util.*;
 
 public class ChannelImpl implements Channel {
-    private String     name;
-    private String     password;
-    private String     topic;
-    private Modes      modes;
-    private List<User> bans;
-    private List<User> users;
+    private final String            name;
+    private final Modes             modes;
+    private final List<User>        bans;
+    private final List<User>        users;
+    private final Map<User, String> prefix;
+    private       String            password;
+    private       Channel.Topic     topic;
 
     public ChannelImpl() {
         this("");
@@ -20,20 +21,23 @@ public class ChannelImpl implements Channel {
         this(name, null);
     }
 
-    public ChannelImpl(String name, String topic) {
+    public ChannelImpl(String name, Channel.Topic topic) {
         this(name, topic, new Modes(null, 0, false, false));
     }
 
-    public ChannelImpl(String name, String topic, Modes modes) {
-        this(name, topic, modes, new ArrayList<>(), new ArrayList<>());
+    public ChannelImpl(String name, Channel.Topic topic, Modes modes) {
+        this(name, topic, modes, new ArrayList<>(), new ArrayList<>(), new HashMap<>());
     }
 
-    public ChannelImpl(String name, String topic, Modes modes, List<User> bans, List<User> users) {
-        this.name  = name;
-        this.topic = topic;
-        this.modes = modes;
-        this.bans  = bans;
-        this.users = users;
+    public ChannelImpl(
+            String name, Channel.Topic topic, Modes modes, List<User> bans, List<User> users, Map<User, String> prefix
+    ) {
+        this.name   = name;
+        this.topic  = topic;
+        this.modes  = modes;
+        this.bans   = bans;
+        this.users  = users;
+        this.prefix = prefix;
     }
 
     @Override
@@ -42,12 +46,12 @@ public class ChannelImpl implements Channel {
     }
 
     @Override
-    public Optional<String> topic() {
-        return Optional.ofNullable(topic);
+    public Optional<Topic> topic() {
+        return topic != null && topic.topic() != null && topic.user() != null ? Optional.of(topic) : Optional.empty();
     }
 
     @Override
-    public void topic(String topic) {
+    public void topic(Topic topic) {
         this.topic = topic;
     }
 
@@ -72,6 +76,11 @@ public class ChannelImpl implements Channel {
 
     public List<User> modifiableUsers() {
         return users;
+    }
+
+    @Override
+    public Optional<String> prefix(User user) {
+        return Optional.ofNullable(prefix.get(user));
     }
 
     @Override

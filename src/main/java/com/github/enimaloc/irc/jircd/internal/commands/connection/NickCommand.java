@@ -1,10 +1,11 @@
 package com.github.enimaloc.irc.jircd.internal.commands.connection;
 
+import com.github.enimaloc.irc.jircd.api.Message;
 import com.github.enimaloc.irc.jircd.api.User;
 import com.github.enimaloc.irc.jircd.internal.Regex;
 import com.github.enimaloc.irc.jircd.internal.UserImpl;
+import com.github.enimaloc.irc.jircd.internal.UserState;
 import com.github.enimaloc.irc.jircd.internal.commands.Command;
-import com.github.enimaloc.irc.jircd.internal.exception.IRCException;
 
 @Command(name = "nick")
 public class NickCommand {
@@ -15,15 +16,19 @@ public class NickCommand {
             return;
         }
         if (!nickname.matches(Regex.NICKNAME.pattern())) {
-            throw new IRCException.ErroneusNickname(user.server().settings(), user.info(), nickname);
+            user.send(Message.ERR_ERRONEUSNICKNAME.parameters(user.info().format(), nickname));
+            return;
         }
         if (user.server().users().stream().anyMatch(
                 u -> u.info().nickname() != null && u.info().nickname().equals(nickname))) {
-            throw new IRCException.NicknameInUse(user.server().settings(), user.info(), nickname);
+            user.send(Message.ERR_NICKNAMEINUSE.parameters(user.info().format(), nickname));
+            return;
         }
-        user.server().broadcast(user.info().format() + " NICK " + nickname);
+        if (user.state() == UserState.LOGGED) {
+            user.server().broadcast(user.info().format() + " NICK " + nickname);
+        }
         user.info().setNickname(nickname);
-        if (user.info().isRegistrationComplete()) {
+        if (user.info().canRegistrationBeComplete()) {
             ((UserImpl) user).finishRegistration();
         }
     }

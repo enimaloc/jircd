@@ -1,12 +1,8 @@
 package com.github.enimaloc.irc.jircd.internal;
 
 import com.github.enimaloc.irc.jircd.Constant;
-import com.github.enimaloc.irc.jircd.api.Channel;
-import com.github.enimaloc.irc.jircd.api.JIRCD;
-import com.github.enimaloc.irc.jircd.api.ServerSettings;
-import com.github.enimaloc.irc.jircd.api.User;
+import com.github.enimaloc.irc.jircd.api.*;
 import com.github.enimaloc.irc.jircd.internal.commands.Command;
-import com.github.enimaloc.irc.jircd.internal.exception.IRCException;
 import java.io.BufferedReader;
 import java.io.DataOutputStream;
 import java.io.IOException;
@@ -78,26 +74,26 @@ public class UserImpl extends Thread implements User {
                     logger.trace("Rescheduled ping for {} to {}", this.info.host(),
                                  new SimpleDateFormat().format(new Date(nextPing)));
                 } else {
-                    try {
-                        process(line);
-                    } catch (InvocationTargetException e) {
-                        try {
-                            throw e.getCause();
-                        } catch (IRCException exception) {
-                            throw exception;
-                        } catch (Throwable throwable) {
-                            logger.error("This append when process command {} from {}", line, info.format(), throwable);
-                            throw new IRCException.UnknownError(server.settings(), info, "", "",
-                                                                throwable.getMessage());
-                        }
-                    } catch (IllegalAccessException e) {
-                        e.printStackTrace();
-                    }
+                    process(line);
+//                    } catch (InvocationTargetException e) {
+//                        try {
+//                            throw e.getCause();
+//                        } catch (IRCException exception) {
+//                            throw exception;
+//                        } catch (Throwable throwable) {
+//                            logger.error("This append when process command {} from {}", line, info.format(), throwable);
+//                            throw new IRCException.UnknownError(server.settings(), info, "", "",
+//                                                                throwable.getMessage());
+//                        }
+//                    } catch (IllegalAccessException e) {
+//                        e.printStackTrace();
+//                    }
                 }
-            } catch (IRCException e) {
-                send(e.format());
-            } catch (IOException e) {
-                if (!e.getLocalizedMessage().equals("Socket closed") && state != UserState.DISCONNECTED) {
+//            } catch (IRCException e) {
+//                send(e.format());
+            } catch (IOException | InvocationTargetException | IllegalAccessException e) {
+                if ((e.getMessage() == null || !e.getMessage().equals("Socket closed")) &&
+                    state != UserState.DISCONNECTED) {
                     terminate("Internal error");
                     e.printStackTrace();
                 }
@@ -108,15 +104,18 @@ public class UserImpl extends Thread implements User {
     }
 
     @Override
-    public void send(String message) {
+    public void send(Message message) {
+        send(message.format(server.settings().host));
+    }
+
+    @Override
+    public void send(String raw) {
         try {
-            logger.trace("Sent {}", message);
-            output.writeBytes(message + "\r\n");
+            logger.trace("Sent {}", raw);
+            output.writeBytes(raw + "\r\n");
             output.flush();
         } catch (IOException e) {
-            if (e.getMessage().equals("Socket closed")) {
-                logger.warn("Socket close, maybe have no effect on test, ignoring", e);
-            } else {
+            if (!e.getMessage().equals("Socket closed") && !server.isShutdown()) {
                 e.printStackTrace();
             }
         }
@@ -142,7 +141,7 @@ public class UserImpl extends Thread implements User {
         String[] params  = split[1].contains(":") ? split[1].split(":") : new String[]{split[1]};
         String[] middle = params.length != 0 && !(params[0].isEmpty() || params[0].isBlank()) ? params[0].contains(
                 " ") ? params[0].split(" ") : new String[]{params[0]} : new String[0];
-        String trailing = params.length == 2 ? params[1] : "";
+        String trailing = params.length == 2 ? params[1] : null;
 
         int min = -1;
         for (Object cmd : server.commands()) {
@@ -167,7 +166,8 @@ public class UserImpl extends Thread implements User {
                         nameByAMethod = nameByAClazz;
                     }
                     if (nameByAMethod.equalsIgnoreCase(command)) {
-                        min = Math.min(min == -1 ? Integer.MAX_VALUE : min, method.getParameterCount() - (asTrailing ? 2 : 1));
+                        min = Math.min(min == -1 ? Integer.MAX_VALUE : min,
+                                       method.getParameterCount() - (asTrailing ? 2 : 1));
                         if (method.getParameterCount() - (asTrailing ? 2 : 1) == middle.length) {
                             Object[] args = new Object[method.getParameterCount()];
                             args[0] = this;
@@ -183,7 +183,8 @@ public class UserImpl extends Thread implements User {
             }
         }
         if (min > 0) {
-            throw new IRCException.NeedMoreParamsError(server.settings(), info, command);
+            send(Message.ERR_NEEDMOREPARAMS.parameters(info.format(), command));
+//            throw new IRCException.NeedMoreParamsError(server.settings(), info, command);
         }
     }
 
@@ -194,11 +195,11 @@ public class UserImpl extends Thread implements User {
 
     public void finishRegistration() {
         state = UserState.LOGGED;
-        send("%s :Welcome to the %s Network, %s".formatted(info.format(), server.settings().networkName,
-                                                           info.format()));
-        send("%s :Your host is %s, running version %s".formatted(info.format(), Constant.NAME, Constant.VERSION));
-        send("%s :This server was created %tD %tT".formatted(info.format(), server.createdAt(), server.createdAt()));
-        send("%s %s %s %s %s".formatted(info.format(), Constant.NAME, Constant.VERSION, "", ""));
+        String userInfo = info.format();
+        send(Message.RPL_WELCOME.parameters(userInfo, server.settings().networkName, userInfo));
+        send(Message.RPL_YOURHOST.parameters(userInfo, Constant.NAME, Constant.VERSION));
+        send(Message.RPL_CREATED.parameters(userInfo, server.createdAt(), server.createdAt()));
+        send(Message.RPL_MYINFO.parameters(userInfo, Constant.NAME, Constant.VERSION, "", ""));
         List<Map<String, Object>> tokens = server.supportAttribute()
                                                  .asMapsWithLimit(13,
                                                                   (key, value) -> {
@@ -208,31 +209,34 @@ public class UserImpl extends Thread implements User {
                                                                       if (value instanceof Boolean) {
                                                                           return (boolean) value;
                                                                       }
+                                                                      if (value instanceof Character) {
+                                                                          return (char) value != '\u0000';
+                                                                      }
                                                                       return true;
                                                                   });
         for (Map<String, Object> token : tokens) {
-            StringBuilder builder = new StringBuilder(info.format() + " ");
+            StringBuilder builder = new StringBuilder();
             if (token.isEmpty()) {
                 continue;
             }
             token.forEach((s, o) -> builder.append(s.toUpperCase(Locale.ROOT))
                                            .append(parseOptional(o))
                                            .append(" "));
-            send(builder.append(":are supported by this server").toString());
+            send(Message.RPL_ISUPPORT.parameters(userInfo, builder));
         }
     }
 
     private String parseOptional(Object potentialOptional) {
         if (potentialOptional instanceof Optional) {
-            return parseOptional_((Optional) potentialOptional);
+            return parseOptional_((Optional<?>) potentialOptional);
         } else if (potentialOptional instanceof OptionalInt) {
             return parseOptional_((OptionalInt) potentialOptional);
         }
         return "=" + potentialOptional;
     }
 
-    private String parseOptional_(Optional optional) {
-        return (optional.isPresent() ? "=" + optional.get() : "");
+    private String parseOptional_(Optional<?> optional) {
+        return optional.isPresent() ? "=" + optional.get() : "";
     }
 
     private String parseOptional_(OptionalInt optional) {
@@ -260,11 +264,6 @@ public class UserImpl extends Thread implements User {
 
     public List<Channel> modifiableChannels() {
         return channels;
-    }
-
-    @Override
-    public String prefix() {
-        return "";
     }
 
     @Override
@@ -310,7 +309,7 @@ public class UserImpl extends Thread implements User {
             return passwordValid;
         }
 
-        public boolean isRegistrationComplete() {
+        public boolean canRegistrationBeComplete() {
             return hasString(host) && hasString(username) && hasString(nickname) && hasString(realName) &&
                    passwordValid && state != UserState.LOGGED;
         }
@@ -344,9 +343,7 @@ public class UserImpl extends Thread implements User {
         }
 
         public String format() {
-            return (hasString(username) ? username : "") + (hasString(host) ? (hasString(nickname) ?
-                    "!" + nickname :
-                    "") + "@" + host : "");
+            return (hasString(nickname) ? nickname : "@" + host);
         }
 
         private boolean hasString(String s) {

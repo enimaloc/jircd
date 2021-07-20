@@ -141,6 +141,10 @@ public class JIRCDImpl extends Thread implements JIRCD {
         return supportAttribute;
     }
 
+    public boolean isShutdown() {
+        return isShutdown;
+    }
+
     @Override
     public String toString() {
         return "IRCServerImpl{" +

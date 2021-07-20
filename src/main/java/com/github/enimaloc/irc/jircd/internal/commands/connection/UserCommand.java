@@ -1,10 +1,10 @@
 package com.github.enimaloc.irc.jircd.internal.commands.connection;
 
+import com.github.enimaloc.irc.jircd.api.Message;
 import com.github.enimaloc.irc.jircd.api.User;
 import com.github.enimaloc.irc.jircd.internal.UserImpl;
 import com.github.enimaloc.irc.jircd.internal.UserState;
 import com.github.enimaloc.irc.jircd.internal.commands.Command;
-import com.github.enimaloc.irc.jircd.internal.exception.IRCException;
 
 @Command(name = "user")
 public class UserCommand {
@@ -15,11 +15,12 @@ public class UserCommand {
             return;
         }
         if (user.state() == UserState.LOGGED) {
-            throw new IRCException.AlreadyRegisteredError(user.server().settings(), user.info());
+            user.send(Message.ERR_ALREADYREGISTERED.parameters(user.info().format()));
+            return;
         }
         user.info().setUsername(username);
         user.info().setRealName(realName);
-        if (user.info().isRegistrationComplete()) {
+        if (user.info().canRegistrationBeComplete()) {
             ((UserImpl) user).finishRegistration();
         }
     }

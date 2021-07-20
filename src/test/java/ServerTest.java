@@ -1,31 +1,32 @@
+import com.github.enimaloc.irc.jircd.Constant;
+import com.github.enimaloc.irc.jircd.api.Channel;
 import com.github.enimaloc.irc.jircd.api.JIRCD;
 import com.github.enimaloc.irc.jircd.api.ServerSettings;
 import com.github.enimaloc.irc.jircd.api.User;
-import com.github.enimaloc.irc.jircd.internal.JIRCDImpl;
-import com.github.enimaloc.irc.jircd.internal.UserImpl;
-import com.github.enimaloc.irc.jircd.internal.UserState;
+import com.github.enimaloc.irc.jircd.internal.*;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintStream;
+import java.lang.reflect.ParameterizedType;
 import java.net.Socket;
 import java.net.SocketTimeoutException;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Random;
+import java.util.*;
 import java.util.function.IntPredicate;
+import java.util.stream.Collectors;
 import org.junit.jupiter.api.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.junit.jupiter.api.Assumptions.assumeFalse;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 class ServerTest {
     public static final String ENDING                         = "\r\n";
     public static final long   TIME_OUT_BETWEEN_TEST          = 100;
-    public static final long   TIME_OUT_BETWEEN_COMMUNICATION = 500;
+    public static final long   TIME_OUT_BETWEEN_COMMUNICATION = 100;
     public static final int    TIME_OUT_WHEN_WAITING_RESPONSE = 1000;
 
     ServerSettings baseSettings;
@@ -69,16 +70,6 @@ class ServerTest {
             return new Connection(client, input, output);
         }
 
-        @BeforeEach
-        void setUp(TestInfo info) {
-            try {
-                this.connections = new Connection[]{createConnection()};
-            } catch (IOException e) {
-                fail("Failed to open client socket", e);
-            }
-            logger.info("Starting {}", info.getDisplayName());
-        }
-
         public void addConnections(int number) {
             Connection baseConnection = connections[0];
             this.connections    = new Connection[number + 1];
@@ -90,7 +81,119 @@ class ServerTest {
                     fail("Failed to open client socket", e);
                 }
             }
+        }
 
+        @BeforeEach
+        void setUp(TestInfo info) {
+            try {
+                this.connections = new Connection[]{createConnection()};
+            } catch (IOException e) {
+                fail("Failed to open client socket", e);
+            }
+            logger.info("Starting {}", info.getDisplayName());
+        }
+
+        @Test
+        @Disabled
+        void fullTest() {
+            connections[0].send("PASS " + baseSettings.pass);
+            connections[0].send("NICK bob");
+            connections[0].send("USER bobby 0 * :Mobbye Plav");
+            assertArrayEquals(new String[]{
+                    ":%s 001 bob :Welcome to the %s Network, bob".formatted(baseSettings.host,
+                                                                            baseSettings.networkName),
+                    ":%s 002 bob :Your host is %s, running version %s".formatted(baseSettings.host, Constant.NAME,
+                                                                                 Constant.VERSION),
+                    ":%s 003 bob :This server was created %tD %tT".formatted(baseSettings.host, server.createdAt(),
+                                                                             server.createdAt()),
+                    ":%s 004 bob %s %s %s %s".formatted(baseSettings.host, Constant.NAME, Constant.VERSION, "", ""),
+            }, connections[0].awaitMessage(4).toArray(String[]::new));
+
+            int              count = 0;
+            SupportAttribute attr  = server.supportAttribute();
+            for (int i = 0; i < Math.max(Math.ceil(attr.length() / 13.), 1); i++) {
+                count++;
+                List<String> messages = connections[0].awaitMessage();
+                if (messages.isEmpty()) {
+                    continue;
+                }
+                String isSupport = messages.get(0);
+                assertTrue(isSupport.startsWith(":%s 005 bob ".formatted(baseSettings.host)));
+                assertTrue(isSupport.endsWith(":are supported by this server"));
+                isSupport = isSupport.replaceFirst(":%s 005 bob ".formatted(baseSettings.host), "")
+                                     .replace(" :are supported by this server", "");
+
+                String[] attributes = isSupport.split(" ");
+                assertTrue(attributes.length <= 13);
+                for (String attribute : attributes) {
+                    String              key           = attribute.contains("=") ? attribute.split("=")[0] : attribute;
+                    String              value         = attribute.contains("=") ? attribute.split("=")[1] : null;
+                    Map<String, Object> map           = attr.asMap((s, o) -> s.equalsIgnoreCase(key));
+                    String              fieldName     = (String) map.keySet().toArray()[0];
+                    Object              expectedValue = map.values().toArray()[0];
+                    Class<?>            expectedClazz = null;
+                    Class<?>            actualClazz   = null;
+                    Object              actualValue   = null;
+                    if (value != null) {
+                        try {
+                            actualValue = Integer.parseInt(value);
+                            actualClazz = Integer.class;
+                        } catch (NumberFormatException ignored) {
+                            if (value.equals("true") || value.equals("false")) {
+                                actualValue = Boolean.parseBoolean(value);
+                                actualClazz = Boolean.class;
+                            } else {
+                                if (value.contains(",") && Arrays.stream(value.split(",")).allMatch(
+                                        s -> s.length() == 1)) {
+                                    actualValue = value.toCharArray();
+                                    actualClazz = Character[].class;
+                                } else {
+                                    actualValue = value;
+                                    actualClazz = String.class;
+                                }
+                            }
+                        }
+                    }
+                    if (expectedValue instanceof Optional) {
+                        try {
+                            if (value == null) {
+                                actualClazz   = (Class<?>) ((ParameterizedType) SupportAttribute.class.getDeclaredField(
+                                        fieldName).getGenericType()).getActualTypeArguments()[0];
+                                expectedValue = null;
+                            }
+                            expectedClazz = (Class<?>) ((ParameterizedType) SupportAttribute.class.getDeclaredField(
+                                    fieldName).getGenericType()).getActualTypeArguments()[0];
+                            expectedValue = expectedValue != null ? ((Optional<?>) expectedValue).orElse(null) : null;
+                        } catch (NoSuchFieldException e) {
+                            fail(e);
+                        }
+                    } else if (expectedValue instanceof OptionalInt) {
+                        if (value == null) {
+                            actualClazz   = Integer.class;
+                            expectedValue = null;
+                        }
+                        expectedClazz = Integer.class;
+                        // Is present is not detected by idea here
+                        //noinspection OptionalGetWithoutIsPresent
+                        expectedValue = expectedValue != null && ((OptionalInt) expectedValue).isPresent() ?
+                                ((OptionalInt) expectedValue).getAsInt() :
+                                null;
+                    } else {
+                        expectedClazz = expectedValue.getClass();
+                    }
+
+                    assertEquals(expectedValue, actualValue);
+                    assertEquals(expectedClazz, actualClazz);
+                }
+            }
+            assertEquals(Math.max(Math.ceil(attr.length() / 13.), 1), count);
+            assertEquals(1, server.users().size());
+            UserImpl.Info info = server.users().get(0).info();
+            assertEquals("127.0.0.1", info.host());
+            assertEquals("bob", info.nickname());
+            assertEquals("bobby", info.username());
+            assertEquals("Mobbye Plav", info.realName());
+            assertEquals("bob", info.format());
         }
 
         private String getRandomString(int length) {
@@ -157,7 +260,7 @@ class ServerTest {
                     assertNull(info.username());
                     assertNull(info.nickname());
                     assertNull(info.realName());
-                    assertFalse(info.isRegistrationComplete());
+                    assertFalse(info.canRegistrationBeComplete());
                 }
 
                 @Test
@@ -196,9 +299,7 @@ class ServerTest {
             class NickCommand {
                 @Test
                 void nickTest() throws InterruptedException {
-                    addConnections(1);
                     connections[0].send("PASS " + baseSettings.pass);
-                    connections[1].send("PASS " + baseSettings.pass);
                     Thread.sleep(TIME_OUT_BETWEEN_COMMUNICATION);
 
                     connections[0].send("NICK bob");
@@ -206,14 +307,12 @@ class ServerTest {
                     UserImpl.Info info = server.users().get(0).info();
                     assertTrue(info.passwordValid());
                     assertEquals("bob", info.nickname());
-                    assertArrayEquals(new String[]{
-                            "@127.0.0.1 NICK bob"
-                    }, connections[1].awaitMessage().toArray());
+                    assertArrayEquals(new String[]{}, connections[0].awaitMessage().toArray());
 
                     assertEquals("127.0.0.1", info.host());
                     assertNull(info.username());
                     assertNull(info.realName());
-                    assertFalse(info.isRegistrationComplete());
+                    assertFalse(info.canRegistrationBeComplete());
                 }
 
                 @Test
@@ -264,7 +363,7 @@ class ServerTest {
 
                     assertEquals("127.0.0.1", info.host());
                     assertNull(info.nickname());
-                    assertFalse(info.isRegistrationComplete());
+                    assertFalse(info.canRegistrationBeComplete());
                 }
 
                 @Test
@@ -276,7 +375,7 @@ class ServerTest {
                             (int) (5 + Math.max(Math.ceil(server.supportAttribute().length() / 13.), 1)));
                     connections[0].send("USER bob 0 * :Mobba Plav");
                     assertArrayEquals(new String[]{
-                            ":" + baseSettings.host + " 462 bobby!bob@127.0.0.1 :You may not reregister"
+                            ":" + baseSettings.host + " 462 bob :You may not reregister"
                     }, connections[0].awaitMessage().toArray());
                 }
             }
@@ -288,7 +387,7 @@ class ServerTest {
                     ServerSettings.Operator savedOper = baseSettings.operators.get(0);
                     connections[0].send("OPER " + savedOper.username() + " " + savedOper.password());
                     assertArrayEquals(new String[]{
-                            "@127.0.0.1 :You are now an IRC operator"
+                            ":%s 381 @127.0.0.1 :You are now an IRC operator".formatted(baseSettings.host)
                     }, connections[0].awaitMessage().toArray(new String[0]));
                 }
 

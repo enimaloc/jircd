@@ -1,9 +1,9 @@
 package com.github.enimaloc.irc.jircd.internal.commands.connection;
 
+import com.github.enimaloc.irc.jircd.api.Message;
 import com.github.enimaloc.irc.jircd.api.ServerSettings;
 import com.github.enimaloc.irc.jircd.api.User;
 import com.github.enimaloc.irc.jircd.internal.commands.Command;
-import com.github.enimaloc.irc.jircd.internal.exception.IRCException;
 import java.util.Optional;
 
 @Command(name = "oper")
@@ -25,10 +25,11 @@ public class OperCommand {
         }
         ServerSettings.Operator oper = operOptional.get();
         if (!oper.password().equals(password)) {
-            throw new IRCException.PasswdMismatch(user.server().settings(), user.info());
+            user.send(Message.ERR_PASSWDMISMATCH.parameters(user.info().format()));
+            return;
         }
         user.info().setOper(oper);
-        user.send(user.info().format() + " :You are now an IRC operator");
+        user.send(Message.RPL_YOUREOPER.parameters(user.info().format()));
     }
 
 }

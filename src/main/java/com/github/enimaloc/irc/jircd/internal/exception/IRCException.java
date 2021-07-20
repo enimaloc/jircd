@@ -308,4 +308,23 @@ public abstract class IRCException extends RuntimeException {
             return channel + " :You're not on that channel";
         }
     }
+
+    public static class ChanoPrivsNeeded extends IRCException {
+        private final String channel;
+
+        public ChanoPrivsNeeded(ServerSettings serverSettings, UserImpl.Info userInfo, String channel) {
+            super(serverSettings, userInfo);
+            this.channel = channel;
+        }
+
+        @Override
+        public int getCode() {
+            return 482;
+        }
+
+        @Override
+        public String getFormat() {
+            return channel + " :You're not channel operator";
+        }
+    }
 }
