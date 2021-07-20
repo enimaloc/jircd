@@ -75,22 +75,7 @@ public class UserImpl extends Thread implements User {
                                  new SimpleDateFormat().format(new Date(nextPing)));
                 } else {
                     process(line);
-//                    } catch (InvocationTargetException e) {
-//                        try {
-//                            throw e.getCause();
-//                        } catch (IRCException exception) {
-//                            throw exception;
-//                        } catch (Throwable throwable) {
-//                            logger.error("This append when process command {} from {}", line, info.format(), throwable);
-//                            throw new IRCException.UnknownError(server.settings(), info, "", "",
-//                                                                throwable.getMessage());
-//                        }
-//                    } catch (IllegalAccessException e) {
-//                        e.printStackTrace();
-//                    }
                 }
-//            } catch (IRCException e) {
-//                send(e.format());
             } catch (IOException | InvocationTargetException | IllegalAccessException e) {
                 if ((e.getMessage() == null || !e.getMessage().equals("Socket closed")) &&
                     state != UserState.DISCONNECTED) {
@@ -187,7 +172,6 @@ public class UserImpl extends Thread implements User {
         }
         if (min > 0) {
             send(Message.ERR_NEEDMOREPARAMS.parameters(info.format(), command));
-//            throw new IRCException.NeedMoreParamsError(server.settings(), info, command);
         }
     }
 
@@ -238,11 +222,11 @@ public class UserImpl extends Thread implements User {
         return "=" + potentialOptional;
     }
 
-    private String parseOptional_(Optional<?> optional) {
-        return optional.isPresent() ? "=" + optional.get() : "";
+    private String parseOptional_(@SuppressWarnings("OptionalUsedAsFieldOrParameterType") Optional<?> optional) {
+        return optional.map(o -> "=" + o).orElse("");
     }
 
-    private String parseOptional_(OptionalInt optional) {
+    private String parseOptional_(@SuppressWarnings("OptionalUsedAsFieldOrParameterType") OptionalInt optional) {
         return (optional.isPresent() ? "=" + optional.getAsInt() : "");
     }
 

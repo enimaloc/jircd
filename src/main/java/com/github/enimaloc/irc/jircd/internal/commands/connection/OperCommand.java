@@ -12,7 +12,7 @@ public class OperCommand {
 //    FIXME : Missing documentation about that
 //    @Command
 //    public void execute(User user) {
-//        throw new IRCException.NoNicknameGiven()
+//        ERR_NONICKNAMEGIVEN
 //    }
 
     // TODO: 17/07/2021 ERR_NOOPERHOST - 491
