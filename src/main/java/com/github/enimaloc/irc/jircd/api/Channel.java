@@ -8,6 +8,8 @@ public interface Channel {
 
     Optional<Topic> topic();
 
+    void broadcast(String from, Message message);
+
     void broadcast(String message);
 
     String name();
