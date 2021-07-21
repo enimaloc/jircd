@@ -4,6 +4,8 @@ import java.util.Arrays;
 
 public class Message {
 
+    public static final Message CMD_JOIN = new Message(":%s JOIN %s");
+
     public static final Message RPL_WELCOME      = new Message(":%s 001 %s :Welcome to the %s Network, %s");
     public static final Message RPL_YOURHOST     = new Message(":%s 002 %s :Your host is %s, running version %s");
     public static final Message RPL_CREATED      = new Message(":%s 003 %s :This server was created %tD %tT");
@@ -13,10 +15,15 @@ public class Message {
     public static final Message RPL_TOPIC        = new Message(":%s 332 %s %s :%s");
     public static final Message RPL_TOPICWHOTIME = new Message(":%s 333 %s %s %s %s");
     public static final Message RPL_NAMREPLY     = new Message(":%s 353 %s %s %s :%s");
+    public static final Message RPL_ENDOFNAMES   = new Message(":%s 366 %s %s :End of /NAMES list");
+    public static final Message RPL_MOTD         = new Message(":%s 372 %s :%s");
+    public static final Message RPL_MOTDSTART    = new Message(":%s 375 %s :- %s Message of the day - ");
+    public static final Message RPL_ENDOFMOTD    = new Message(":%s 376 %s :End of /MOTD command.");
     public static final Message RPL_YOUREOPER    = new Message(":%s 381 %s :You are now an IRC operator");
 
     public static final Message ERR_NOSUCHCHANNEL     = new Message(":%s 403 %s %s :No such channel");
     public static final Message ERR_TOOMANYCHANNELS   = new Message(":%s 405 %s %s :You have joined too many channels");
+    public static final Message ERR_NOMOTD            = new Message(":%s 422 %s :MOTD File is missing");
     public static final Message ERR_ERRONEUSNICKNAME  = new Message(":%s 432 %s %s :Erroneus nickname");
     public static final Message ERR_NICKNAMEINUSE     = new Message(":%s 433 %s %s :Nickname is already in use");
     public static final Message ERR_NOTONCHANNEL      = new Message(":%s 442 %s %s :You're not on that channel");
@@ -65,7 +72,7 @@ public class Message {
         Object[] objects = new Object[parameters.length + 1];
         objects[0] = source;
         System.arraycopy(parameters, 0, objects, 1, parameters.length);
-        return base.formatted(objects) + (haveTrailing && trailing != null ? ": " + trailing : "");
+        return base.formatted(objects) + (haveTrailing && trailing != null ? " :" + trailing : "");
     }
 
     @Override

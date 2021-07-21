@@ -1,6 +1,7 @@
 package com.github.enimaloc.irc.jircd.internal;
 
 import com.github.enimaloc.irc.jircd.api.Channel;
+import com.github.enimaloc.irc.jircd.api.Message;
 import com.github.enimaloc.irc.jircd.api.User;
 import java.util.*;
 
@@ -84,7 +85,15 @@ public class ChannelImpl implements Channel {
     }
 
     @Override
+    public void broadcast(String source, Message message) {
+        broadcast(message.format(source));
+    }
+
+    @Override
     public void broadcast(String message) {
+        for (User user : users) {
+            user.send(message);
+        }
     }
 
     public static final class Modes {

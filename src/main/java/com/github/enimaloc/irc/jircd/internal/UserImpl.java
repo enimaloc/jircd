@@ -211,6 +211,15 @@ public class UserImpl extends Thread implements User {
                                            .append(" "));
             send(Message.RPL_ISUPPORT.parameters(userInfo, builder));
         }
+        if (server.settings().motd.length != 0) {
+            send(Message.RPL_MOTDSTART.parameters(info.format(), server.settings().host));
+            for (String s : server.settings().motd) {
+                send(Message.RPL_MOTD.parameters(info.format(), s));
+            }
+            send(Message.RPL_ENDOFMOTD.parameters(info.format()));
+        } else {
+            send(Message.ERR_NOMOTD.parameters(info.format()));
+        }
     }
 
     private String parseOptional(Object potentialOptional) {

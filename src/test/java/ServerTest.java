@@ -9,6 +9,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintStream;
 import java.lang.reflect.ParameterizedType;
+import java.net.BindException;
 import java.net.Socket;
 import java.net.SocketTimeoutException;
 import java.nio.charset.StandardCharsets;
@@ -25,25 +26,37 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 class ServerTest {
     public static final String ENDING                         = "\r\n";
-    public static final long   TIME_OUT_BETWEEN_TEST          = 100;
     public static final long   TIME_OUT_BETWEEN_COMMUNICATION = 100;
-    public static final int    TIME_OUT_WHEN_WAITING_RESPONSE = 1000;
+    public static final int    TIME_OUT_WHEN_WAITING_RESPONSE = 100;
+
+    public static final String[] EMPTY_ARRAY = new String[0];
 
     ServerSettings baseSettings;
     JIRCDImpl      server;
     Logger         logger = LoggerFactory.getLogger(ServerTest.class);
+    int            attrLength;
 
     @BeforeEach
     void setUp(TestInfo info) {
         baseSettings = new ServerSettings();
 
         logger.info("Creating server with settings: {}", baseSettings);
-        try {
-            server = (JIRCDImpl) new JIRCD.Builder()
-                    .withSettings(baseSettings)
-                    .build();
-        } catch (IOException e) {
-            fail("Can't start IRCServer", e);
+        boolean retry = true;
+        while (retry && server == null) {
+            try {
+                server     = (JIRCDImpl) new JIRCD.Builder()
+                        .withSettings(baseSettings)
+                        .build();
+                attrLength = (int) Math.max(Math.ceil(server.supportAttribute().length() / 13.) - 1, 1);
+                retry      = false;
+            } catch (BindException ignored) {
+                int newPort = new Random().nextInt(1000) + 1024;
+                logger.warn("Port {} is currently used, replaced with {}", baseSettings.port, newPort);
+                baseSettings.port = newPort;
+            } catch (IOException e) {
+                retry = false;
+                fail("Can't start IRCServer", e);
+            }
         }
         logger.info("Starting {}", info.getDisplayName());
     }
@@ -246,6 +259,117 @@ class ServerTest {
         @Nested
         class ConnectionMessage {
 
+            @Test
+            void fullConnectionTest() {
+                String host = baseSettings.host;
+                connections[0].send("PASS " + baseSettings.pass);
+                assertArrayEquals(EMPTY_ARRAY, connections[0].awaitMessage().toArray());
+                connections[0].send("NICK bob");
+                assertArrayEquals(EMPTY_ARRAY, connections[0].awaitMessage().toArray());
+                connections[0].send("USER bobby 0 * :Mobbye Plav");
+
+                assertArrayEquals(new String[]{
+                        ":%s 001 bob :Welcome to the %s Network, bob".formatted(host, baseSettings.networkName),
+                        ":%s 002 bob :Your host is %s, running version %s".formatted(host, Constant.NAME,
+                                                                                     Constant.VERSION),
+                        ":%s 003 bob :This server was created %tD %tT".formatted(host, server.createdAt(),
+                                                                                 server.createdAt()),
+                        ":%s 004 bob %s %s %s %s".formatted(host, Constant.NAME, Constant.VERSION, "", ""),
+                }, connections[0].awaitMessage(4).toArray());
+
+                int              count = 0;
+                SupportAttribute attr  = server.supportAttribute();
+                for (int i = 0; i < attrLength; i++) {
+                    count++;
+                    List<String> messages = connections[0].awaitMessage();
+                    if (messages.isEmpty()) {
+                        continue;
+                    }
+                    String isSupport = messages.get(0);
+                    System.out.println(isSupport);
+                    assertTrue(isSupport.startsWith(":%s 005 bob ".formatted(baseSettings.host)));
+                    assertTrue(isSupport.endsWith(":are supported by this server"));
+                    isSupport = isSupport.replaceFirst(":%s 005 bob ".formatted(baseSettings.host), "")
+                                         .replace(" :are supported by this server", "");
+
+                    String[] attributes = isSupport.split(" ");
+                    assertTrue(attributes.length <= 13);
+                    for (String attribute : attributes) {
+                        String key = attribute.contains("=") ?
+                                attribute.split("=")[0] :
+                                attribute;
+                        String              value         = attribute.contains("=") ? attribute.split("=")[1] : null;
+                        Map<String, Object> map           = attr.asMap((s, o) -> s.equalsIgnoreCase(key));
+                        String              fieldName     = (String) map.keySet().toArray()[0];
+                        Object              expectedValue = map.values().toArray()[0];
+                        Class<?>            expectedClazz = null;
+                        Class<?>            actualClazz   = null;
+                        Object              actualValue   = null;
+                        if (value != null) {
+                            try {
+                                actualValue = Integer.parseInt(value);
+                                actualClazz = Integer.class;
+                            } catch (NumberFormatException ignored) {
+                                if (value.equals("true") || value.equals("false")) {
+                                    actualValue = Boolean.parseBoolean(value);
+                                    actualClazz = Boolean.class;
+                                } else {
+                                    if (value.contains(",") && Arrays.stream(value.split(",")).allMatch(
+                                            s -> s.length() == 1)) {
+                                        actualValue = value.toCharArray();
+                                        actualClazz = Character[].class;
+                                    } else {
+                                        actualValue = value;
+                                        actualClazz = String.class;
+                                    }
+                                }
+                            }
+                        }
+                        if (expectedValue instanceof Optional) {
+                            try {
+                                if (value == null) {
+                                    actualClazz
+                                                  = (Class<?>) ((ParameterizedType) SupportAttribute.class.getDeclaredField(
+                                            fieldName).getGenericType()).getActualTypeArguments()[0];
+                                    expectedValue = null;
+                                }
+                                expectedClazz = (Class<?>) ((ParameterizedType) SupportAttribute.class.getDeclaredField(
+                                        fieldName).getGenericType()).getActualTypeArguments()[0];
+                                expectedValue = expectedValue != null ?
+                                        ((Optional<?>) expectedValue).orElse(null) :
+                                        null;
+                            } catch (NoSuchFieldException e) {
+                                fail(e);
+                            }
+                        } else if (expectedValue instanceof OptionalInt) {
+                            if (value == null) {
+                                actualClazz   = Integer.class;
+                                expectedValue = null;
+                            }
+                            expectedClazz = Integer.class;
+                            // Is present is not detected by idea here
+                            //noinspection OptionalGetWithoutIsPresent
+                            expectedValue = expectedValue != null && ((OptionalInt) expectedValue).isPresent() ?
+                                    ((OptionalInt) expectedValue).getAsInt() :
+                                    null;
+                        } else {
+                            expectedClazz = expectedValue.getClass();
+                        }
+
+                        assertEquals(expectedValue, actualValue);
+                        assertEquals(expectedClazz, actualClazz);
+                    }
+                }
+
+                assertEquals(":%s 375 bob :- %s Message of the day - ".formatted(host, host),
+                             connections[0].awaitMessage().get(0));
+                for (String motd : baseSettings.motd) {
+                    assertEquals(":%s 372 bob :%s".formatted(host, motd), connections[0].awaitMessage().get(0));
+                }
+                assertEquals(":%s 376 bob :End of /MOTD command.".formatted(host),
+                             connections[0].awaitMessage().get(0));
+            }
+
             @Nested
             class PassCommand {
 
@@ -371,8 +495,7 @@ class ServerTest {
                     connections[0].send("PASS " + baseSettings.pass);
                     connections[0].send("NICK bob");
                     connections[0].send("USER bobby 0 * :Mobby Plav");
-                    connections[0].ignoreMessage(
-                            (int) (5 + Math.max(Math.ceil(server.supportAttribute().length() / 13.), 1)));
+                    connections[0].ignoreMessage(6 + attrLength + baseSettings.motd.length);
                     connections[0].send("USER bob 0 * :Mobba Plav");
                     assertArrayEquals(new String[]{
                             ":" + baseSettings.host + " 462 bob :You may not reregister"
@@ -388,7 +511,7 @@ class ServerTest {
                     connections[0].send("OPER " + savedOper.username() + " " + savedOper.password());
                     assertArrayEquals(new String[]{
                             ":%s 381 @127.0.0.1 :You are now an IRC operator".formatted(baseSettings.host)
-                    }, connections[0].awaitMessage().toArray(new String[0]));
+                    }, connections[0].awaitMessage().toArray(EMPTY_ARRAY));
                 }
 
                 @Test
@@ -398,7 +521,7 @@ class ServerTest {
                             "OPER " + savedOper.username() + " " + getRandomString(new Random().nextInt(9) + 1));
                     assertArrayEquals(new String[]{
                             ":%s 464 @127.0.0.1 :Password incorrect".formatted(baseSettings.host)
-                    }, connections[0].awaitMessage().toArray(new String[0]));
+                    }, connections[0].awaitMessage().toArray(EMPTY_ARRAY));
                 }
 
                 @Test
@@ -406,7 +529,7 @@ class ServerTest {
                     connections[0].send("OPER");
                     assertArrayEquals(new String[]{
                             ":%s 461 @127.0.0.1 OPER :Not enough parameters".formatted(baseSettings.host)
-                    }, connections[0].awaitMessage().toArray(new String[0]));
+                    }, connections[0].awaitMessage().toArray(EMPTY_ARRAY));
                 }
             }
 
@@ -444,6 +567,5 @@ class ServerTest {
     void tearDown(TestInfo info) throws InterruptedException {
         logger.info("{} test end", info.getDisplayName());
         server.shutdown();
-        Thread.sleep(TIME_OUT_BETWEEN_TEST); // Await server shutdown
     }
 }

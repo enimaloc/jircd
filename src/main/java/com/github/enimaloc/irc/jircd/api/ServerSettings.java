@@ -1,7 +1,10 @@
 package com.github.enimaloc.irc.jircd.api;
 
+import java.io.File;
+import java.io.IOException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -9,18 +12,31 @@ import java.util.Objects;
 
 public class ServerSettings {
 
-    public int            port        = 6667;
-    public long           pingTimeout = 100000000;
-    public long           timeout     = 500000000;
-    public String         pass        = "hello";
-    public String         host;
-    public String         networkName = "enimaloc's";
-    public List<Operator> operators   = new ArrayList<>(Collections.singletonList(new Operator("oper", "operPass")));
+    public        int            port        = 6667;
+    public        long           pingTimeout = 100000000;
+    public        long           timeout     = 500000000;
+    public        String         pass        = "hello";
+    public        String         host;
+    public        String         networkName = "enimaloc's";
+    public        List<Operator> operators   = new ArrayList<>(
+            Collections.singletonList(new Operator("oper", "operPass")));
+    private final String[]       defaultMotd = new String[]{
+            "This is the default MOTD",
+            "You can edit it by creating an motd.txt file",
+            "At the root of the directory ans set your motd in !"
+    };
+    public        String[]       motd;
 
-    {
+    public ServerSettings() {
         try {
             host = InetAddress.getLocalHost().getHostAddress();
         } catch (UnknownHostException e) {
+            e.printStackTrace();
+        }
+        try {
+            File motdFile = new File("motd.txt");
+            motd = motdFile.exists() ? Files.readAllLines(motdFile.toPath()).toArray(String[]::new) : defaultMotd;
+        } catch (IOException e) {
             e.printStackTrace();
         }
     }
