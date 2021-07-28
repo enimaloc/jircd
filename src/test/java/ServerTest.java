@@ -27,7 +27,7 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
 class ServerTest {
     public static final String ENDING                         = "\r\n";
     public static final long   TIME_OUT_BETWEEN_COMMUNICATION = 100;
-    public static final int    TIME_OUT_WHEN_WAITING_RESPONSE = 100;
+    public static final int    TIME_OUT_WHEN_WAITING_RESPONSE = 1000 * 5;
 
     public static final String[] EMPTY_ARRAY = new String[0];
 
@@ -274,7 +274,7 @@ class ServerTest {
                 send("PASS %s".formatted(baseSettings.pass));
                 send("NICK %s".formatted(nick));
                 send("USER %s 0 * :%s".formatted(user, realName));
-                ignoreMessage(6 + attrLength + Math.max(1, baseSettings.motd.length));
+                ignoreMessage(4 + attrLength + Math.max(1, baseSettings.motd.length));
             }
 
             public void send(String message) {
@@ -1215,7 +1215,7 @@ class ServerTest {
                 }
 
                 @Test
-                void partMultipleTest() {
+                void ppartMultipleTest() {
                     List<Channel> channels = new ArrayList<>();
                     addConnections(1);
                     for (int i = 0; i < 5; i++) {
