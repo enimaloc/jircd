@@ -16,7 +16,7 @@ public interface Channel {
 
     void topic(Topic topic);
 
-    Optional<String> prefix(User user);
+    String prefix(User user);
 
     ChannelImpl.Modes modes();
 
@@ -24,7 +24,11 @@ public interface Channel {
 
     List<User> users();
 
-    record Topic(String topic, User user) {
-        public static final Topic EMPTY = new Topic(null, null);
+    record Topic(String topic, User user, long unixTimestamp) {
+        public static final Topic EMPTY = new Topic(null, null, -1L);
+
+        public Topic(String topic, User user) {
+            this(topic, user, System.currentTimeMillis() / 1000);
+        }
     }
 }

@@ -4,6 +4,7 @@ import com.github.enimaloc.irc.jircd.api.Channel;
 import com.github.enimaloc.irc.jircd.api.JIRCD;
 import com.github.enimaloc.irc.jircd.api.ServerSettings;
 import com.github.enimaloc.irc.jircd.api.User;
+import com.github.enimaloc.irc.jircd.internal.commands.channel.*;
 import com.github.enimaloc.irc.jircd.internal.commands.connection.*;
 import java.io.IOException;
 import java.net.ServerSocket;
@@ -31,7 +32,14 @@ public class JIRCDImpl extends Thread implements JIRCD {
                 new NickCommand(),
                 new UserCommand(),
                 new OperCommand(),
-                new QuitCommand()
+                new QuitCommand(),
+
+                // Channel Operations
+                new JoinCommand(),
+                new PartCommand(),
+                new TopicCommand(),
+                new NamesCommand(),
+                new ListCommand()
         ));
 
         supportAttribute = new SupportAttribute(
@@ -41,7 +49,7 @@ public class JIRCDImpl extends Thread implements JIRCD {
                 null,
                 64,
                 "#",
-                null,
+                "UM",
                 '\u0000',
                 null,
                 64,
@@ -89,17 +97,10 @@ public class JIRCDImpl extends Thread implements JIRCD {
     }
 
     @Override
-    public Channel createChannel(String name) {
-        ChannelImpl channel = new ChannelImpl(name);
-        channels.add(channel);
-        return channel;
-    }
-
-    @Override
     public void shutdown() {
         logger.info("Stopping server...");
         isShutdown = true;
-        new ArrayList<>(users).forEach(user -> user.terminate("Server closed."));
+        new ArrayList<>(users).forEach(user -> user.terminate("Server closed.", true));
         this.interrupt();
         try {
             serverSocket.close();
@@ -115,6 +116,10 @@ public class JIRCDImpl extends Thread implements JIRCD {
 
     @Override
     public List<Channel> channels() {
+        return Collections.unmodifiableList(channels);
+    }
+
+    public List<Channel> originalChannels() {
         return channels;
     }
 

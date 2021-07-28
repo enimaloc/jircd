@@ -14,24 +14,25 @@ public class ChannelImpl implements Channel {
     private       String            password;
     private       Channel.Topic     topic;
 
-    public ChannelImpl() {
-        this("");
+    public ChannelImpl(User creator) {
+        this(creator, "");
     }
 
-    public ChannelImpl(String name) {
-        this(name, null);
+    public ChannelImpl(User creator, String name) {
+        this(creator, name, null);
     }
 
-    public ChannelImpl(String name, Channel.Topic topic) {
-        this(name, topic, new Modes(null, 0, false, false));
+    public ChannelImpl(User creator, String name, Topic topic) {
+        this(creator, name, topic, new Modes(null, 0, false, false));
     }
 
-    public ChannelImpl(String name, Channel.Topic topic, Modes modes) {
-        this(name, topic, modes, new ArrayList<>(), new ArrayList<>(), new HashMap<>());
+    public ChannelImpl(User creator, String name, Topic topic, Modes modes) {
+        this(creator, name, topic, modes, new ArrayList<>(), new ArrayList<>(), new HashMap<>());
     }
 
     public ChannelImpl(
-            String name, Channel.Topic topic, Modes modes, List<User> bans, List<User> users, Map<User, String> prefix
+            User creator, String name, Channel.Topic topic, Modes modes, List<User> bans, List<User> users,
+            Map<User, String> prefix
     ) {
         this.name   = name;
         this.topic  = topic;
@@ -39,6 +40,7 @@ public class ChannelImpl implements Channel {
         this.bans   = bans;
         this.users  = users;
         this.prefix = prefix;
+        this.prefix.put(creator, "%");
     }
 
     @Override
@@ -48,7 +50,8 @@ public class ChannelImpl implements Channel {
 
     @Override
     public Optional<Topic> topic() {
-        return topic != null && topic.topic() != null && topic.user() != null ? Optional.of(topic) : Optional.empty();
+        return topic != null && topic.topic() != null && topic.user() != null && topic.unixTimestamp() != -1 ?
+                Optional.of(topic) : Optional.empty();
     }
 
     @Override
@@ -80,8 +83,8 @@ public class ChannelImpl implements Channel {
     }
 
     @Override
-    public Optional<String> prefix(User user) {
-        return Optional.ofNullable(prefix.get(user));
+    public String prefix(User user) {
+        return (prefix.get(user) != null ? prefix.get(user) : "") + user.modes().prefix();
     }
 
     @Override

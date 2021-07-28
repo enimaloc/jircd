@@ -11,6 +11,9 @@ public class Message {
     public static final Message RPL_CREATED      = new Message(":%s 003 %s :This server was created %tD %tT");
     public static final Message RPL_MYINFO       = new Message(":%s 004 %s %s %s %s %s");
     public static final Message RPL_ISUPPORT     = new Message(":%s 005 %s %s :are supported by this server");
+    public static final Message RPL_LISTSTART    = new Message(":%s 321 %s Channel :Users  Name");
+    public static final Message RPL_LIST         = new Message(":%s 322 %s %s %s :%s");
+    public static final Message RPL_LISTEND      = new Message(":%s 323 %s :End of /LIST");
     public static final Message RPL_NOTOPIC      = new Message(":%s 331 %s %s :No topic is set");
     public static final Message RPL_TOPIC        = new Message(":%s 332 %s %s :%s");
     public static final Message RPL_TOPICWHOTIME = new Message(":%s 333 %s %s %s %s");

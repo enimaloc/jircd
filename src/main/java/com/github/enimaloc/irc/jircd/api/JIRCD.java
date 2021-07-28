@@ -10,8 +10,6 @@ public interface JIRCD {
 
     void shutdown();
 
-    Channel createChannel(String name);
-
     ServerSettings settings();
 
     List<Channel> channels();

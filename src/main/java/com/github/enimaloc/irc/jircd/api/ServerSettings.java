@@ -2,13 +2,12 @@ package com.github.enimaloc.irc.jircd.api;
 
 import java.io.File;
 import java.io.IOException;
+import java.lang.reflect.Field;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.nio.file.Files;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
+import java.util.function.Predicate;
 
 public class ServerSettings {
 
@@ -28,17 +27,42 @@ public class ServerSettings {
     public        String[]       motd;
 
     public ServerSettings() {
+        this(new File("motd.txt"));
+    }
+
+    public ServerSettings(File motdFile) {
         try {
             host = InetAddress.getLocalHost().getHostAddress();
         } catch (UnknownHostException e) {
             e.printStackTrace();
         }
         try {
-            File motdFile = new File("motd.txt");
-            motd = motdFile.exists() ? Files.readAllLines(motdFile.toPath()).toArray(String[]::new) : defaultMotd;
+            motd = motdFile.exists() ? Files.readAllLines(motdFile.toPath()).toArray(String[]::new) : new String[0];
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+
+    public ServerSettings copy() {
+        return copy(new ServerSettings());
+    }
+
+    public ServerSettings copy(ServerSettings to) {
+        return copy(to, field -> true);
+    }
+
+    public ServerSettings copy(ServerSettings to, Predicate<Field> copyIf) {
+        Arrays.stream(this.getClass().getDeclaredFields())
+              .filter(copyIf)
+              .forEach(field -> {
+                  field.setAccessible(true);
+                  try {
+                      field.set(to, field.get(this));
+                  } catch (IllegalAccessException e) {
+                      e.printStackTrace();
+                  }
+              });
+        return to;
     }
 
     @Override
@@ -66,6 +90,10 @@ public class ServerSettings {
                ", pingTimeout=" + pingTimeout +
                ", timeout=" + timeout +
                ", pass='" + pass + '\'' +
+               ", host='" + host + '\'' +
+               ", networkName='" + networkName + '\'' +
+               ", operators=" + operators +
+               ", motd=" + Arrays.toString(motd) +
                '}';
     }
 
