@@ -274,7 +274,7 @@ class ServerTest {
                 send("PASS %s".formatted(baseSettings.pass));
                 send("NICK %s".formatted(nick));
                 send("USER %s 0 * :%s".formatted(user, realName));
-                ignoreMessage(6 + attrLength + baseSettings.motd.length);
+                ignoreMessage(6 + attrLength + Math.max(1, baseSettings.motd.length));
             }
 
             public void send(String message) {
@@ -685,7 +685,7 @@ class ServerTest {
                     connections[0].send("OPER " + savedOper.username() + " " + savedOper.password());
                     assertArrayEquals(new String[]{
                             ":%s 381 @127.0.0.1 :You are now an IRC operator".formatted(baseSettings.host)
-                    }, connections[0].awaitMessage().toArray(EMPTY_ARRAY));
+                    }, connections[0].awaitMessage().toArray());
                 }
 
                 @Test
@@ -703,7 +703,7 @@ class ServerTest {
                     connections[0].send("OPER");
                     assertArrayEquals(new String[]{
                             ":%s 461 @127.0.0.1 OPER :Not enough parameters".formatted(baseSettings.host)
-                    }, connections[0].awaitMessage().toArray(EMPTY_ARRAY));
+                    }, connections[0].awaitMessage().toArray());
                 }
             }
 
@@ -712,7 +712,7 @@ class ServerTest {
                 @Test
                 void quitTest() throws InterruptedException {
                     Thread.sleep(TIME_OUT_BETWEEN_COMMUNICATION);
-                    assertEquals(1, server.users().size());
+                    assumeTrue(waitFor(() -> server.users().size() == 1));
                     User user = server.users().get(0);
                     connections[0].send("QUIT");
 
@@ -724,7 +724,7 @@ class ServerTest {
                 @Test
                 void quitWithReasonTest() throws InterruptedException {
                     Thread.sleep(TIME_OUT_BETWEEN_COMMUNICATION);
-                    assertEquals(1, server.users().size());
+                    assumeTrue(waitFor(() -> server.users().size() == 1));
                     User user = server.users().get(0);
                     connections[0].send("QUIT :Bye");
 
