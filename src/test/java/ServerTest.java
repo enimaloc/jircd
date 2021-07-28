@@ -27,7 +27,7 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
 class ServerTest {
     public static final String ENDING                         = "\r\n";
     public static final long   TIME_OUT_BETWEEN_COMMUNICATION = 100;
-    public static final int    TIME_OUT_WHEN_WAITING_RESPONSE = 1000 * 5;
+    public static final int    TIME_OUT_WHEN_WAITING_RESPONSE = 1000 * 1;
 
     public static final String[] EMPTY_ARRAY = new String[0];
 
@@ -583,11 +583,11 @@ class ServerTest {
 
                 @Test
                 void alreadyRegisteredPassTest() throws InterruptedException {
-                    Thread.sleep(TIME_OUT_BETWEEN_COMMUNICATION);
-                    ((UserImpl) server.users().get(0)).setState(UserState.LOGGED);
+                    connections[0].createUser("john", "John Doe");
+//                    Thread.sleep(TIME_OUT_BETWEEN_COMMUNICATION);
                     connections[0].send("PASS " + baseSettings.pass);
                     assertArrayEquals(new String[]{
-                            ":" + baseSettings.host + " 462 @127.0.0.1 :You may not reregister"
+                            ":" + baseSettings.host + " 462 john :You may not reregister"
                     }, connections[0].awaitMessage().toArray());
                 }
 
