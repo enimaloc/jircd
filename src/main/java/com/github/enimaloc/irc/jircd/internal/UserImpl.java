@@ -220,7 +220,7 @@ public class UserImpl extends Thread implements User {
             token.forEach((s, o) -> builder.append(s.toUpperCase(Locale.ROOT))
                                            .append(parseOptional(o))
                                            .append(" "));
-            send(Message.RPL_ISUPPORT.parameters(userInfo, builder));
+            send(Message.RPL_ISUPPORT.parameters(userInfo, builder.deleteCharAt(builder.length() - 1)));
         }
         if (server.settings().motd.length != 0) {
             send(Message.RPL_MOTDSTART.parameters(info.format(), server.settings().host));
