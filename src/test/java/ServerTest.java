@@ -27,7 +27,7 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
 class ServerTest {
     public static final String ENDING                         = "\r\n";
     public static final long   TIME_OUT_BETWEEN_COMMUNICATION = 100;
-    public static final int    TIME_OUT_WHEN_WAITING_RESPONSE = 1000 * 1;
+    public static final int    TIME_OUT_WHEN_WAITING_RESPONSE = 1000;
 
     public static final String[] EMPTY_ARRAY = new String[0];
 
@@ -40,7 +40,9 @@ class ServerTest {
     void setUp(TestInfo info) {
         baseSettings = new ServerSettings();
 
-        baseSettings.motd = new String[0];
+        baseSettings.motd        = new String[0];
+        baseSettings.host        = "jircd-host";
+        baseSettings.networkName = "JIRCD";
 
         logger.info("Creating server with settings: {}", baseSettings);
         boolean retry = true;
@@ -81,6 +83,12 @@ class ServerTest {
                       e.printStackTrace();
                   }
               });
+    }
+
+    @AfterEach
+    void tearDown(TestInfo info) {
+        logger.info("{} test end", info.getDisplayName());
+        server.shutdown();
     }
 
     @Nested
@@ -147,21 +155,18 @@ class ServerTest {
         }
 
         @FullModuleTest
-        @Disabled
         void fullTest() {
             connections[0].send("PASS " + baseSettings.pass);
             connections[0].send("NICK bob");
             connections[0].send("USER bobby 0 * :Mobbye Plav");
             assertArrayEquals(new String[]{
-                    ":%s 001 bob :Welcome to the %s Network, bob".formatted(baseSettings.host,
-                                                                            baseSettings.networkName),
-                    ":%s 002 bob :Your host is %s, running version %s".formatted(baseSettings.host, Constant.NAME,
-                                                                                 Constant.VERSION),
-                    ":%s 003 bob :This server was created %tD %tT".formatted(baseSettings.host, server.createdAt(),
-                                                                             server.createdAt()),
-                    ":%s 004 bob %s %s %s %s".formatted(baseSettings.host, Constant.NAME, Constant.VERSION, "", ""),
+                    ":jircd-host 001 bob :Welcome to the JIRCD Network, bob",
+                    ":jircd-host 002 bob :Your host is %s, running version %s".formatted(Constant.NAME,
+                                                                                         Constant.VERSION),
+                    ":jircd-host 003 bob :This server was created %tD %tT".formatted(server.createdAt(),
+                                                                                     server.createdAt()),
+                    ":jircd-host 004 bob %s %s %s %s".formatted(Constant.NAME, Constant.VERSION, "", ""),
             }, connections[0].awaitMessage(4).toArray(String[]::new));
-
             int              count = 0;
             SupportAttribute attr  = server.supportAttribute();
             for (int i = 0; i < Math.max(Math.ceil(attr.length() / 13.), 1); i++) {
@@ -171,9 +176,9 @@ class ServerTest {
                     continue;
                 }
                 String isSupport = messages.get(0);
-                assertTrue(isSupport.startsWith(":%s 005 bob ".formatted(baseSettings.host)));
+                assertTrue(isSupport.startsWith(":jircd-host 005 bob "));
                 assertTrue(isSupport.endsWith(":are supported by this server"));
-                isSupport = isSupport.replaceFirst(":%s 005 bob ".formatted(baseSettings.host), "")
+                isSupport = isSupport.replaceFirst(":jircd-host 005 bob ", "")
                                      .replace(" :are supported by this server", "");
 
                 String[] attributes = isSupport.split(" ");
@@ -239,6 +244,9 @@ class ServerTest {
                     assertEquals(expectedClazz, actualClazz);
                 }
             }
+            assertArrayEquals(new String[]{
+                    ":jircd-host 422 bob :MOTD File is missing"
+            }, connections[0].awaitMessage().toArray());
             assertEquals(Math.max(Math.ceil(attr.length() / 13.), 1), count);
             assertEquals(1, server.users().size());
             UserImpl.Info info = server.users().get(0).info();
@@ -247,6 +255,8 @@ class ServerTest {
             assertEquals("bobby", info.username());
             assertEquals("Mobbye Plav", info.realName());
             assertEquals("bob", info.format());
+
+
         }
 
         private String getRandomString(int length) {
@@ -312,7 +322,6 @@ class ServerTest {
 
             @FullModuleTest
             void fullConnectionTest() {
-                String host = baseSettings.host;
                 connections[0].send("PASS " + baseSettings.pass);
                 assertArrayEquals(EMPTY_ARRAY, connections[0].awaitMessage().toArray());
                 connections[0].send("NICK bob");
@@ -320,12 +329,12 @@ class ServerTest {
                 connections[0].send("USER bobby 0 * :Mobbye Plav");
 
                 assertArrayEquals(new String[]{
-                        ":%s 001 bob :Welcome to the %s Network, bob".formatted(host, baseSettings.networkName),
-                        ":%s 002 bob :Your host is %s, running version %s".formatted(host, Constant.NAME,
-                                                                                     Constant.VERSION),
-                        ":%s 003 bob :This server was created %tD %tT".formatted(host, server.createdAt(),
-                                                                                 server.createdAt()),
-                        ":%s 004 bob %s %s %s %s".formatted(host, Constant.NAME, Constant.VERSION, "", ""),
+                        ":jircd-host 001 bob :Welcome to the JIRCD Network, bob",
+                        ":jircd-host 002 bob :Your host is %s, running version %s".formatted(Constant.NAME,
+                                                                                             Constant.VERSION),
+                        ":jircd-host 003 bob :This server was created %tD %tT".formatted(server.createdAt(),
+                                                                                         server.createdAt()),
+                        ":jircd-host 004 bob %s %s %s %s".formatted(Constant.NAME, Constant.VERSION, "", ""),
                 }, connections[0].awaitMessage(4).toArray());
 
                 SupportAttribute attr = server.supportAttribute();
@@ -336,9 +345,9 @@ class ServerTest {
                     }
                     String isSupport = messages.get(0);
                     System.out.println(isSupport);
-                    assertTrue(isSupport.startsWith(":%s 005 bob ".formatted(baseSettings.host)));
+                    assertTrue(isSupport.startsWith(":jircd-host 005 bob "));
                     assertTrue(isSupport.endsWith(":are supported by this server"));
-                    isSupport = isSupport.replaceFirst(":%s 005 bob ".formatted(baseSettings.host), "")
+                    isSupport = isSupport.replaceFirst(":jircd-host 005 bob ", "")
                                          .replace(" :are supported by this server", "");
 
                     String[] attributes = isSupport.split(" ");
@@ -410,7 +419,7 @@ class ServerTest {
                     }
                 }
 
-                assertEquals(":%s 422 bob :MOTD File is missing".formatted(host),
+                assertEquals(":jircd-host 422 bob :MOTD File is missing",
                              connections[0].awaitMessage().get(0));
                 User bob = server.users().get(0);
                 assertEquals(UserState.LOGGED, bob.state());
@@ -421,8 +430,7 @@ class ServerTest {
 
             @FullModuleTest
             void fullConnectionWithMOTDTest() throws IOException {
-                String host     = baseSettings.host;
-                File   tempFile = File.createTempFile("motd", "txt");
+                File tempFile = File.createTempFile("motd", "txt");
                 tempFile.deleteOnExit();
                 System.out.println("tempFile.getAbsolutePath() = " + tempFile.getAbsolutePath());
                 FileWriter writer = new FileWriter(tempFile);
@@ -440,12 +448,12 @@ class ServerTest {
 
                 connections[0].send("USER bobby 0 * :Mobbye Plav");
                 assertArrayEquals(new String[]{
-                        ":%s 001 bob :Welcome to the %s Network, bob".formatted(host, baseSettings.networkName),
-                        ":%s 002 bob :Your host is %s, running version %s".formatted(host, Constant.NAME,
-                                                                                     Constant.VERSION),
-                        ":%s 003 bob :This server was created %tD %tT".formatted(host, server.createdAt(),
-                                                                                 server.createdAt()),
-                        ":%s 004 bob %s %s %s %s".formatted(host, Constant.NAME, Constant.VERSION, "", ""),
+                        ":jircd-host 001 bob :Welcome to the JIRCD Network, bob",
+                        ":jircd-host 002 bob :Your host is %s, running version %s".formatted(Constant.NAME,
+                                                                                             Constant.VERSION),
+                        ":jircd-host 003 bob :This server was created %tD %tT".formatted(server.createdAt(),
+                                                                                         server.createdAt()),
+                        ":jircd-host 004 bob %s %s %s %s".formatted(Constant.NAME, Constant.VERSION, "", ""),
                 }, connections[0].awaitMessage(4).toArray());
 
                 SupportAttribute attr = server.supportAttribute();
@@ -456,9 +464,9 @@ class ServerTest {
                     }
                     String isSupport = messages.get(0);
                     System.out.println(isSupport);
-                    assertTrue(isSupport.startsWith(":%s 005 bob ".formatted(baseSettings.host)));
+                    assertTrue(isSupport.startsWith(":jircd-host 005 bob "));
                     assertTrue(isSupport.endsWith(":are supported by this server"));
-                    isSupport = isSupport.replaceFirst(":%s 005 bob ".formatted(baseSettings.host), "")
+                    isSupport = isSupport.replaceFirst(":jircd-host 005 bob ", "")
                                          .replace(" :are supported by this server", "");
 
                     String[] attributes = isSupport.split(" ");
@@ -530,12 +538,13 @@ class ServerTest {
                     }
                 }
 
-                assertEquals(":%s 375 bob :- %s Message of the day - ".formatted(host, host),
+                assertEquals(":jircd-host 375 bob :- jircd-host Message of the day - ",
                              connections[0].awaitMessage().get(0));
                 for (String motd : baseSettings.motd) {
-                    assertEquals(":%s 372 bob :%s".formatted(host, motd), connections[0].awaitMessage().get(0));
+                    assertEquals(":jircd-host 372 bob :%s".formatted(motd),
+                                 connections[0].awaitMessage().get(0));
                 }
-                assertEquals(":%s 376 bob :End of /MOTD command.".formatted(host),
+                assertEquals(":jircd-host 376 bob :End of /MOTD command.",
                              connections[0].awaitMessage().get(0));
                 User bob = server.users().get(0);
                 assertEquals(UserState.LOGGED, bob.state());
@@ -565,7 +574,7 @@ class ServerTest {
                 void noParamTest() {
                     connections[0].send("PASS");
                     assertArrayEquals(new String[]{
-                            ":" + baseSettings.host + " 461 @127.0.0.1 PASS :Not enough parameters"
+                            ":jircd-host 461 @127.0.0.1 PASS :Not enough parameters"
                     }, connections[0].awaitMessage().toArray());
                     assertFalse(server.users().get(0).info().passwordValid());
                 }
@@ -576,18 +585,17 @@ class ServerTest {
                     assumeFalse(baseSettings.pass.equals(passwd));
                     connections[0].send("PASS " + passwd);
                     assertArrayEquals(new String[]{
-                            ":" + baseSettings.host + " 464 @127.0.0.1 :Password incorrect"
+                            ":jircd-host 464 @127.0.0.1 :Password incorrect"
                     }, connections[0].awaitMessage().toArray());
                     assertFalse(server.users().get(0).info().passwordValid());
                 }
 
                 @Test
-                void alreadyRegisteredPassTest() throws InterruptedException {
+                void alreadyRegisteredPassTest() {
                     connections[0].createUser("john", "John Doe");
-//                    Thread.sleep(TIME_OUT_BETWEEN_COMMUNICATION);
                     connections[0].send("PASS " + baseSettings.pass);
                     assertArrayEquals(new String[]{
-                            ":" + baseSettings.host + " 462 john :You may not reregister"
+                            ":jircd-host 462 john :You may not reregister"
                     }, connections[0].awaitMessage().toArray());
                 }
 
@@ -619,7 +627,7 @@ class ServerTest {
                     String nickname = getRandomString(50);
                     connections[0].send("NICK " + nickname);
                     assertArrayEquals(new String[]{
-                            ":" + baseSettings.host + " 432 @127.0.0.1 " + nickname + " :Erroneus nickname"
+                            ":jircd-host 432 @127.0.0.1 " + nickname + " :Erroneus nickname"
                     }, connections[0].awaitMessage().toArray());
                 }
 
@@ -629,7 +637,7 @@ class ServerTest {
                     String nickname = getRandomString(7, 128, 255, i -> true);
                     connections[0].send("NICK " + nickname);
                     assertArrayEquals(new String[]{
-                            ":" + baseSettings.host + " 432 @127.0.0.1 " + nickname + " :Erroneus nickname"
+                            ":jircd-host 432 @127.0.0.1 " + nickname + " :Erroneus nickname"
                     }, connections[0].awaitMessage().toArray());
                 }
 
@@ -642,7 +650,7 @@ class ServerTest {
                     connections[1].ignoreMessage();
                     connections[1].send("NICK dup");
                     assertArrayEquals(new String[]{
-                            ":" + baseSettings.host + " 433 @127.0.0.1 dup :Nickname is already in use"
+                            ":jircd-host 433 @127.0.0.1 dup :Nickname is already in use"
                     }, connections[1].awaitMessage().toArray());
                 }
             }
@@ -650,7 +658,7 @@ class ServerTest {
             @Nested
             class UserCommand {
                 @Test
-                void userTest() throws InterruptedException {
+                void userTest() {
                     connections[0].send("PASS " + baseSettings.pass);
                     connections[0].send("USER bobby 0 * :Mobbye Plav" + ENDING);
                     assertTrue(waitFor(500, TimeUnit.MILLISECONDS));
@@ -672,7 +680,7 @@ class ServerTest {
                     connections[0].ignoreMessage(6 + attrLength + baseSettings.motd.length);
                     connections[0].send("USER bob 0 * :Mobba Plav");
                     assertArrayEquals(new String[]{
-                            ":" + baseSettings.host + " 462 bob :You may not reregister"
+                            ":jircd-host 462 bob :You may not reregister"
                     }, connections[0].awaitMessage().toArray());
                 }
             }
@@ -684,7 +692,7 @@ class ServerTest {
                     ServerSettings.Operator savedOper = baseSettings.operators.get(0);
                     connections[0].send("OPER " + savedOper.username() + " " + savedOper.password());
                     assertArrayEquals(new String[]{
-                            ":%s 381 @127.0.0.1 :You are now an IRC operator".formatted(baseSettings.host)
+                            ":jircd-host 381 @127.0.0.1 :You are now an IRC operator"
                     }, connections[0].awaitMessage().toArray());
                 }
 
@@ -694,7 +702,7 @@ class ServerTest {
                     connections[0].send(
                             "OPER " + savedOper.username() + " " + getRandomString(new Random().nextInt(9) + 1));
                     assertArrayEquals(new String[]{
-                            ":%s 464 @127.0.0.1 :Password incorrect".formatted(baseSettings.host)
+                            ":jircd-host 464 @127.0.0.1 :Password incorrect"
                     }, connections[0].awaitMessage().toArray(EMPTY_ARRAY));
                 }
 
@@ -702,7 +710,7 @@ class ServerTest {
                 void incorrectParamsNumberOperTest() {
                     connections[0].send("OPER");
                     assertArrayEquals(new String[]{
-                            ":%s 461 @127.0.0.1 OPER :Not enough parameters".formatted(baseSettings.host)
+                            ":jircd-host 461 @127.0.0.1 OPER :Not enough parameters"
                     }, connections[0].awaitMessage().toArray());
                 }
             }
@@ -752,15 +760,15 @@ class ServerTest {
                 assumeTrue(server.channels().isEmpty());
                 connections[0].send("LIST");
                 assertArrayEquals(new String[]{
-                        ":%s 321 bob Channel :Users  Name".formatted(baseSettings.host),
-                        ":%s 323 bob :End of /LIST".formatted(baseSettings.host)
+                        ":jircd-host 321 bob Channel :Users  Name",
+                        ":jircd-host 323 bob :End of /LIST"
                 }, connections[0].awaitMessage(2).toArray());
 
                 connections[0].send("JOIN #jircd");
                 assertArrayEquals(new String[]{
                         ":bob JOIN #jircd",
-                        ":%s 353 bob = #jircd :%%bob".formatted(baseSettings.host),
-                        ":%s 366 bob #jircd :End of /NAMES list".formatted(baseSettings.host)
+                        ":jircd-host 353 bob = #jircd :%bob",
+                        ":jircd-host 366 bob #jircd :End of /NAMES list"
                 }, connections[0].awaitMessage(3).toArray());
                 assertFalse(server.channels().isEmpty());
                 Optional<Channel> jircdOpt = getChannel("#jircd");
@@ -771,21 +779,21 @@ class ServerTest {
                 assertTrue(jircd.topic().isEmpty());
                 connections[0].send("TOPIC #jircd :A java internet relay chat deamon");
                 assertArrayEquals(new String[]{
-                        ":%s 332 bob #jircd :A java internet relay chat deamon".formatted(baseSettings.host)
+                        ":jircd-host 332 bob #jircd :A java internet relay chat deamon"
                 }, connections[0].awaitMessage().toArray());
                 assertTrue(jircd.topic().isPresent());
 
                 connections[0].send("NAMES #jircd");
                 assertArrayEquals(new String[]{
-                        ":%s 353 bob = #jircd :%%bob".formatted(baseSettings.host),
-                        ":%s 366 bob #jircd :End of /NAMES list".formatted(baseSettings.host)
+                        ":jircd-host 353 bob = #jircd :%bob",
+                        ":jircd-host 366 bob #jircd :End of /NAMES list"
                 }, connections[0].awaitMessage(2).toArray());
 
                 connections[0].send("LIST");
                 assertArrayEquals(new String[]{
-                        ":%s 321 bob Channel :Users  Name".formatted(baseSettings.host),
-                        ":%s 322 bob #jircd 1 :A java internet relay chat deamon".formatted(baseSettings.host),
-                        ":%s 323 bob :End of /LIST".formatted(baseSettings.host)
+                        ":jircd-host 321 bob Channel :Users  Name",
+                        ":jircd-host 322 bob #jircd 1 :A java internet relay chat deamon",
+                        ":jircd-host 323 bob :End of /LIST"
                 }, connections[0].awaitMessage(3).toArray());
 
                 connections[0].send("PART #jircd");
@@ -802,8 +810,8 @@ class ServerTest {
 
                     assertArrayEquals(new String[]{
                             ":bob JOIN #jircd",
-                            ":%s 353 bob = #jircd :%%bob".formatted(baseSettings.host),
-                            ":%s 366 bob #jircd :End of /NAMES list".formatted(baseSettings.host)
+                            ":jircd-host 353 bob = #jircd :%bob",
+                            ":jircd-host 366 bob #jircd :End of /NAMES list"
                     }, connections[0].awaitMessage(3).toArray());
 
                     Optional<Channel> channelOpt = getChannel("#jircd");
@@ -827,9 +835,9 @@ class ServerTest {
                     connections[1].send("JOIN #jircd");
                     assertArrayEquals(new String[]{
                             ":john JOIN #jircd",
-                            ":%s 332 john #jircd :Example topic".formatted(baseSettings.host),
-                            ":%s 353 john = #jircd :%%bob john".formatted(baseSettings.host),
-                            ":%s 366 john #jircd :End of /NAMES list".formatted(baseSettings.host)
+                            ":jircd-host 332 john #jircd :Example topic",
+                            ":jircd-host 353 john = #jircd :%bob john",
+                            ":jircd-host 366 john #jircd :End of /NAMES list"
                     }, connections[1].awaitMessage(4).toArray());
                     assertEquals(2, channel.users().size());
                 }
@@ -850,8 +858,8 @@ class ServerTest {
                     connections[1].send("JOIN #jircd");
                     assertArrayEquals(new String[]{
                             ":john JOIN #jircd",
-                            ":%s 353 john @ #jircd :%%bob john".formatted(baseSettings.host),
-                            ":%s 366 john #jircd :End of /NAMES list".formatted(baseSettings.host)
+                            ":jircd-host 353 john @ #jircd :%bob john",
+                            ":jircd-host 366 john #jircd :End of /NAMES list"
                     }, connections[1].awaitMessage(4).toArray());
                     assertEquals(2, channel.users().size());
                 }
@@ -872,8 +880,8 @@ class ServerTest {
                     connections[1].send("JOIN #jircd " + channel.modes().password().get());
                     assertArrayEquals(new String[]{
                             ":john JOIN #jircd",
-                            ":%s 353 john = #jircd :%%bob john".formatted(baseSettings.host),
-                            ":%s 366 john #jircd :End of /NAMES list".formatted(baseSettings.host)
+                            ":jircd-host 353 john = #jircd :%bob john",
+                            ":jircd-host 366 john #jircd :End of /NAMES list"
                     }, connections[1].awaitMessage(4).toArray());
                     assertEquals(2, channel.users().size());
                 }
@@ -897,9 +905,8 @@ class ServerTest {
                         channelsNameList.append(channel.name()).append(",");
                         expectedOutput.add(":john JOIN %s".formatted(channel.name()));
                         expectedOutput.add(
-                                ":%s 353 john = %s :%%bob john".formatted(baseSettings.host, channel.name()));
-                        expectedOutput.add(":%s 366 john %s :End of /NAMES list".formatted(baseSettings.host,
-                                                                                           channel.name()));
+                                ":jircd-host 353 john = %s :%%bob john".formatted(channel.name()));
+                        expectedOutput.add(":jircd-host 366 john %s :End of /NAMES list".formatted(channel.name()));
                         j += 3;
                     }
 
@@ -931,9 +938,8 @@ class ServerTest {
                         passwdList.append("thinking,");
                         expectedOutput.add(":john JOIN %s".formatted(channel.name()));
                         expectedOutput.add(
-                                ":%s 353 john = %s :%%bob john".formatted(baseSettings.host, channel.name()));
-                        expectedOutput.add(":%s 366 john %s :End of /NAMES list".formatted(baseSettings.host,
-                                                                                           channel.name()));
+                                ":jircd-host 353 john = %s :%%bob john".formatted(channel.name()));
+                        expectedOutput.add(":jircd-host 366 john %s :End of /NAMES list".formatted(channel.name()));
                         j += 3;
                     }
 
@@ -964,12 +970,10 @@ class ServerTest {
                         assumeTrue(channel.topic().orElse(Channel.Topic.EMPTY).equals(exampleTopic));
                         channelsNameList.append(channel.name()).append(",");
                         expectedOutput[j++] = ":john JOIN %s".formatted(channel.name());
-                        expectedOutput[j++] = ":%s 332 john %s :This is a sample topic".formatted(baseSettings.host,
-                                                                                                  channel.name());
-                        expectedOutput[j++] = ":%s 353 john = %s :%%bob john".formatted(baseSettings.host,
-                                                                                        channel.name());
-                        expectedOutput[j++] = ":%s 366 john %s :End of /NAMES list".formatted(baseSettings.host,
-                                                                                              channel.name());
+                        expectedOutput[j++] = ":jircd-host 332 john %s :This is a sample topic".formatted(
+                                channel.name());
+                        expectedOutput[j++] = ":jircd-host 353 john = %s :%%bob john".formatted(channel.name());
+                        expectedOutput[j++] = ":jircd-host 366 john %s :End of /NAMES list".formatted(channel.name());
                     }
 
                     connections[1].createUser("john", "John Doe");
@@ -998,9 +1002,8 @@ class ServerTest {
                         channelsNameList.append(channel.name()).append(",");
                         expectedOutput.add(":john JOIN %s".formatted(channel.name()));
                         expectedOutput.add(
-                                ":%s 353 john @ %s :%%bob john".formatted(baseSettings.host, channel.name()));
-                        expectedOutput.add(":%s 366 john %s :End of /NAMES list".formatted(baseSettings.host,
-                                                                                           channel.name()));
+                                ":jircd-host 353 john @ %s :%%bob john".formatted(channel.name()));
+                        expectedOutput.add(":jircd-host 366 john %s :End of /NAMES list".formatted(channel.name()));
                         j += 3;
                     }
 
@@ -1043,18 +1046,15 @@ class ServerTest {
                         Optional<Channel.Topic> topicOpt = channel.topic();
                         expectedOutput.add(":john JOIN %s".formatted(channel.name()));
                         if (topicOpt.isPresent()) {
-                            expectedOutput.add(":%s 332 john %s :%s".formatted(baseSettings.host,
-                                                                               channel.name(),
-                                                                               topicOpt.get().topic()));
+                            expectedOutput.add(":jircd-host 332 john %s :%s".formatted(channel.name(),
+                                                                                       topicOpt.get().topic()));
                             j++;
                         }
-                        expectedOutput.add(":%s 353 john %s %s :%%bob john".formatted(
-                                baseSettings.host,
+                        expectedOutput.add(":jircd-host 353 john %s %s :%%bob john".formatted(
                                 channel.modes().secret() ? "@" : "=",
                                 channel.name()
                         ));
-                        expectedOutput.add(":%s 366 john %s :End of /NAMES list".formatted(baseSettings.host,
-                                                                                           channel.name()));
+                        expectedOutput.add(":jircd-host 366 john %s :End of /NAMES list".formatted(channel.name()));
                         j += 3;
                     }
 
@@ -1069,7 +1069,7 @@ class ServerTest {
                     String channelName = "#" + getRandomString(7, 128, 255, i -> true);
                     connections[0].send("JOIN " + channelName);
                     assertArrayEquals(new String[]{
-                            ":%s 403 bob %s :No such channel".formatted(baseSettings.host, channelName)
+                            ":jircd-host 403 bob %s :No such channel".formatted(channelName)
                     }, connections[0].awaitMessage().toArray());
                 }
 
@@ -1083,7 +1083,7 @@ class ServerTest {
 
                     connections[0].send("JOIN #enimaloc");
                     assertArrayEquals(new String[]{
-                            ":%s 405 bob #enimaloc :You have joined too many channels".formatted(baseSettings.host)
+                            ":jircd-host 405 bob #enimaloc :You have joined too many channels"
                     }, connections[0].awaitMessage().toArray());
                 }
 
@@ -1102,9 +1102,8 @@ class ServerTest {
                     connections[1].createUser("john", "John Doe");
                     connections[1].send("JOIN " + channel.name());
                     assertArrayEquals(new String[]{
-                            ":%s 475 john %s :Cannot join channel (+k)".formatted(baseSettings.host,
-                                                                                  channel
-                                                                                          .name())
+                            ":jircd-host 475 john %s :Cannot join channel (+k)".formatted(channel
+                                                                                                  .name())
                     }, connections[1].awaitMessage().toArray());
                     assertEquals(1, channel.users().size());
                 }
@@ -1125,7 +1124,7 @@ class ServerTest {
 
                     connections[1].send("JOIN #jircd");
                     assertArrayEquals(new String[]{
-                            ":%s 474 john #jircd :Cannot join channel (+b)".formatted(baseSettings.host)
+                            ":jircd-host 474 john #jircd :Cannot join channel (+b)"
                     }, connections[1].awaitMessage().toArray());
                     assertEquals(1, channel.users().size());
                 }
@@ -1148,7 +1147,7 @@ class ServerTest {
                     connections[1].ignoreMessage(6 + attrLength + baseSettings.motd.length);
                     connections[1].send("JOIN " + channel.name());
                     assertArrayEquals(new String[]{
-                            ":%s 471 bab %s :Cannot join channel (+l)".formatted(baseSettings.host, channel.name())
+                            ":jircd-host 471 bab %s :Cannot join channel (+l)".formatted(channel.name())
                     }, connections[1].awaitMessage().toArray());
                 }
 
@@ -1167,8 +1166,7 @@ class ServerTest {
                     connections[1].createUser("john", "John Doe");
                     connections[1].send("JOIN " + channel.name());
                     assertArrayEquals(new String[]{
-                            ":%s 473 john %s :Cannot join channel (+i)".formatted(baseSettings.host,
-                                                                                  channel.name())
+                            ":jircd-host 473 john %s :Cannot join channel (+i)".formatted(channel.name())
                     }, connections[1].awaitMessage().toArray());
                     assertEquals(1, channel.users().size());
                 }
@@ -1215,7 +1213,7 @@ class ServerTest {
                 }
 
                 @Test
-                void ppartMultipleTest() {
+                void partMultipleTest() {
                     List<Channel> channels = new ArrayList<>();
                     addConnections(1);
                     for (int i = 0; i < 5; i++) {
@@ -1245,7 +1243,7 @@ class ServerTest {
                 void partWithoutParametersTest() {
                     connections[0].send("PART");
                     assertArrayEquals(new String[]{
-                            ":%s 461 bob PART :Not enough parameters".formatted(baseSettings.host)
+                            ":jircd-host 461 bob PART :Not enough parameters"
                     }, connections[0].awaitMessage().toArray());
                 }
 
@@ -1254,7 +1252,7 @@ class ServerTest {
                     String channelName = getRandomString(7, 128, 255, i -> true);
                     connections[0].send("PART " + channelName);
                     assertArrayEquals(new String[]{
-                            ":%s 403 bob %s :No such channel".formatted(baseSettings.host, channelName)
+                            ":jircd-host 403 bob %s :No such channel".formatted(channelName)
                     }, connections[0].awaitMessage().toArray());
                 }
 
@@ -1269,7 +1267,7 @@ class ServerTest {
                     connections[1].createUser("john", "John Doe");
                     connections[1].send("PART #jircd");
                     assertArrayEquals(new String[]{
-                            ":%s 442 john #jircd :You're not on that channel".formatted(baseSettings.host)
+                            ":jircd-host 442 john #jircd :You're not on that channel"
                     }, connections[1].awaitMessage().toArray());
                 }
             }
@@ -1288,7 +1286,7 @@ class ServerTest {
 
                     connections[0].send("TOPIC #jircd");
                     assertArrayEquals(new String[]{
-                            ":%s 331 bob #jircd :No topic is set".formatted(baseSettings.host)
+                            ":jircd-host 331 bob #jircd :No topic is set"
                     }, connections[0].awaitMessage().toArray());
                 }
 
@@ -1310,8 +1308,8 @@ class ServerTest {
                     connections[1].send("TOPIC " + channel.name());
                     Channel.Topic topic = channel.topic().get();
                     assertArrayEquals(new String[]{
-                            ":%s 332 john #jircd :Example topic".formatted(baseSettings.host),
-                            ":%s 333 john #jircd bob %s".formatted(baseSettings.host, topic.unixTimestamp())
+                            ":jircd-host 332 john #jircd :Example topic",
+                            ":jircd-host 333 john #jircd bob %s".formatted(topic.unixTimestamp())
                     }, connections[1].awaitMessage(2).toArray());
                 }
 
@@ -1319,7 +1317,7 @@ class ServerTest {
                 void topicWithNoParameterTest() {
                     connections[0].send("TOPIC");
                     assertArrayEquals(new String[]{
-                            ":%s 461 bob TOPIC :Not enough parameters".formatted(baseSettings.host)
+                            ":jircd-host 461 bob TOPIC :Not enough parameters"
                     }, connections[0].awaitMessage().toArray());
                 }
 
@@ -1328,7 +1326,7 @@ class ServerTest {
                     String channelName = "#" + getRandomString(7, 128, 255, i -> true);
                     connections[0].send("TOPIC " + channelName);
                     assertArrayEquals(new String[]{
-                            ":%s 403 bob %s :No such channel".formatted(baseSettings.host, channelName)
+                            ":jircd-host 403 bob %s :No such channel".formatted(channelName)
                     }, connections[0].awaitMessage().toArray());
                 }
 
@@ -1343,7 +1341,7 @@ class ServerTest {
                     connections[1].createUser("john", "John Doe");
                     connections[1].send("TOPIC #jircd");
                     assertArrayEquals(new String[]{
-                            ":%s 442 john #jircd :You're not on that channel".formatted(baseSettings.host)
+                            ":jircd-host 442 john #jircd :You're not on that channel"
                     }, connections[1].awaitMessage().toArray());
                 }
 
@@ -1362,7 +1360,7 @@ class ServerTest {
                     connections[1].send("TOPIC #jircd :Another topic");
                     connections[1].ignoreMessage(3);
                     assertArrayEquals(new String[]{
-                            ":%s 482 john #jircd :You're not channel operator".formatted(baseSettings.host)
+                            ":jircd-host 482 john #jircd :You're not channel operator"
                     }, connections[1].awaitMessage().toArray());
                     assertTrue(channel.topic().isEmpty());
                 }
@@ -1378,7 +1376,7 @@ class ServerTest {
                     assumeFalse(channel.users().isEmpty());
                     connections[0].send("TOPIC #jircd :Another topic");
                     assertArrayEquals(new String[]{
-                            ":%s 332 bob #jircd :Another topic".formatted(baseSettings.host)
+                            ":jircd-host 332 bob #jircd :Another topic"
                     }, connections[0].awaitMessage().toArray());
                     assertFalse(channel.topic().isEmpty());
                 }
@@ -1395,8 +1393,8 @@ class ServerTest {
                     connections[1].createUser("john", "John Doe");
                     connections[1].send("NAMES #names");
                     assertArrayEquals(new String[]{
-                            ":%s 353 john = #names :%%bob".formatted(baseSettings.host),
-                            ":%s 366 john #names :End of /NAMES list".formatted(baseSettings.host)
+                            ":jircd-host 353 john = #names :%bob",
+                            ":jircd-host 366 john #names :End of /NAMES list"
                     }, connections[1].awaitMessage(2).toArray());
                 }
 
@@ -1413,10 +1411,10 @@ class ServerTest {
                     connections[2].createUser("fred", "Fred Bloggs");
                     connections[2].send("NAMES");
                     assertArrayEquals(new String[]{
-                            ":%s 353 fred = #names :%%bob john".formatted(baseSettings.host),
-                            ":%s 366 fred #names :End of /NAMES list".formatted(baseSettings.host),
-                            ":%s 353 fred = #joker :%%john".formatted(baseSettings.host),
-                            ":%s 366 fred #joker :End of /NAMES list".formatted(baseSettings.host)
+                            ":jircd-host 353 fred = #names :%bob john",
+                            ":jircd-host 366 fred #names :End of /NAMES list",
+                            ":jircd-host 353 fred = #joker :%john",
+                            ":jircd-host 366 fred #joker :End of /NAMES list"
                     }, connections[2].awaitMessage(4).toArray());
                 }
 
@@ -1433,7 +1431,7 @@ class ServerTest {
                     connections[1].createUser("john", "John Doe");
                     connections[1].send("NAMES #names");
                     assertArrayEquals(new String[]{
-                            ":%s 366 john #names :End of /NAMES list".formatted(baseSettings.host)
+                            ":jircd-host 366 john #names :End of /NAMES list"
                     }, connections[1].awaitMessage(1).toArray());
                 }
 
@@ -1452,8 +1450,8 @@ class ServerTest {
                     connections[1].ignoreMessage(4);
                     connections[1].send("NAMES #names");
                     assertArrayEquals(new String[]{
-                            ":%s 353 john @ #names :%%bob john".formatted(baseSettings.host),
-                            ":%s 366 john #names :End of /NAMES list".formatted(baseSettings.host)
+                            ":jircd-host 353 john @ #names :%bob john",
+                            ":jircd-host 366 john #names :End of /NAMES list"
                     }, connections[1].awaitMessage(2).toArray());
                 }
 
@@ -1469,8 +1467,8 @@ class ServerTest {
                     connections[1].createUser("john", "John Doe");
                     connections[1].send("NAMES #names");
                     assertArrayEquals(new String[]{
-                            ":%s 353 john = #names :".formatted(baseSettings.host),
-                            ":%s 366 john #names :End of /NAMES list".formatted(baseSettings.host)
+                            ":jircd-host 353 john = #names :",
+                            ":jircd-host 366 john #names :End of /NAMES list"
                     }, connections[1].awaitMessage(2).toArray());
                 }
 
@@ -1488,8 +1486,8 @@ class ServerTest {
                     connections[1].ignoreMessage(4);
                     connections[1].send("NAMES #names");
                     assertArrayEquals(new String[]{
-                            ":%s 353 john = #names :%%bob john".formatted(baseSettings.host),
-                            ":%s 366 john #names :End of /NAMES list".formatted(baseSettings.host)
+                            ":jircd-host 353 john = #names :%bob john",
+                            ":jircd-host 366 john #names :End of /NAMES list"
                     }, connections[1].awaitMessage(2).toArray());
                 }
             }
@@ -1510,12 +1508,12 @@ class ServerTest {
 
                     connections[1].send("LIST");
                     assertArrayEquals(new String[]{
-                            ":%s 321 john Channel :Users  Name".formatted(baseSettings.host),
-                            ":%s 322 john #hello 1 :".formatted(baseSettings.host),
-                            ":%s 322 john #bonjour 1 :".formatted(baseSettings.host),
-                            ":%s 322 john #hey 1 :".formatted(baseSettings.host),
-                            ":%s 322 john #bye 1 :".formatted(baseSettings.host),
-                            ":%s 323 john :End of /LIST".formatted(baseSettings.host)
+                            ":jircd-host 321 john Channel :Users  Name",
+                            ":jircd-host 322 john #hello 1 :",
+                            ":jircd-host 322 john #bonjour 1 :",
+                            ":jircd-host 322 john #hey 1 :",
+                            ":jircd-host 322 john #bye 1 :",
+                            ":jircd-host 323 john :End of /LIST"
                     }, connections[1].awaitMessage(6).toArray());
                 }
 
@@ -1541,11 +1539,11 @@ class ServerTest {
                     connections[4].createUser("ann", "Ann Yonne");
                     connections[4].send("LIST >2");
                     assertArrayEquals(new String[]{
-                            ":%s 321 ann Channel :Users  Name".formatted(baseSettings.host),
-                            ":%s 322 ann #hello 3 :".formatted(baseSettings.host),
-                            ":%s 322 ann #bonjour 4 :".formatted(baseSettings.host),
-                            ":%s 322 ann #bye 3 :".formatted(baseSettings.host),
-                            ":%s 323 ann :End of /LIST".formatted(baseSettings.host)
+                            ":jircd-host 321 ann Channel :Users  Name",
+                            ":jircd-host 322 ann #hello 3 :",
+                            ":jircd-host 322 ann #bonjour 4 :",
+                            ":jircd-host 322 ann #bye 3 :",
+                            ":jircd-host 323 ann :End of /LIST"
                     }, connections[4].awaitMessage(5).toArray());
                 }
 
@@ -1571,9 +1569,9 @@ class ServerTest {
                     connections[4].createUser("ann", "Ann Yonne");
                     connections[4].send("LIST <2");
                     assertArrayEquals(new String[]{
-                            ":%s 321 ann Channel :Users  Name".formatted(baseSettings.host),
-                            ":%s 322 ann #hey 1 :".formatted(baseSettings.host),
-                            ":%s 323 ann :End of /LIST".formatted(baseSettings.host)
+                            ":jircd-host 321 ann Channel :Users  Name",
+                            ":jircd-host 322 ann #hey 1 :",
+                            ":jircd-host 323 ann :End of /LIST"
                     }, connections[4].awaitMessage(3).toArray());
                 }
 
@@ -1584,55 +1582,49 @@ class ServerTest {
 
                     connections[1].send("LIST #[0-9]*");
                     assertArrayEquals(new String[]{
-                            ":%s 321 john Channel :Users  Name".formatted(baseSettings.host),
-                            ":%s 322 john #42 1 :".formatted(baseSettings.host),
-                            ":%s 323 john :End of /LIST".formatted(baseSettings.host)
+                            ":jircd-host 321 john Channel :Users  Name",
+                            ":jircd-host 322 john #42 1 :",
+                            ":jircd-host 323 john :End of /LIST"
                     }, connections[1].awaitMessage(3).toArray());
 
                     connections[1].send("LIST #[0-9][abc]{3}[0-9]");
                     assertArrayEquals(new String[]{
-                            ":%s 321 john Channel :Users  Name".formatted(baseSettings.host),
-                            ":%s 322 john #1abc2 1 :".formatted(baseSettings.host),
-                            ":%s 323 john :End of /LIST".formatted(baseSettings.host)
+                            ":jircd-host 321 john Channel :Users  Name",
+                            ":jircd-host 322 john #1abc2 1 :",
+                            ":jircd-host 323 john :End of /LIST"
                     }, connections[1].awaitMessage(3).toArray());
 
                     connections[1].send("LIST #[a-z]*");
                     assertArrayEquals(new String[]{
-                            ":%s 321 john Channel :Users  Name".formatted(baseSettings.host),
-                            ":%s 322 john #azerty 1 :".formatted(baseSettings.host),
-                            ":%s 323 john :End of /LIST".formatted(baseSettings.host)
+                            ":jircd-host 321 john Channel :Users  Name",
+                            ":jircd-host 322 john #azerty 1 :",
+                            ":jircd-host 323 john :End of /LIST"
                     }, connections[1].awaitMessage(3).toArray());
 
                     connections[1].send("LIST #[A-Z]*");
                     assertArrayEquals(new String[]{
-                            ":%s 321 john Channel :Users  Name".formatted(baseSettings.host),
-                            ":%s 322 john #AZERTY 1 :".formatted(baseSettings.host),
-                            ":%s 323 john :End of /LIST".formatted(baseSettings.host)
+                            ":jircd-host 321 john Channel :Users  Name",
+                            ":jircd-host 322 john #AZERTY 1 :",
+                            ":jircd-host 323 john :End of /LIST"
                     }, connections[1].awaitMessage(3).toArray());
 
                     connections[1].send("LIST #.*");
                     assertArrayEquals(new String[]{
-                            ":%s 321 john Channel :Users  Name".formatted(baseSettings.host),
-                            ":%s 322 john #42 1 :".formatted(baseSettings.host),
-                            ":%s 322 john #azerty 1 :".formatted(baseSettings.host),
-                            ":%s 322 john #AZERTY 1 :".formatted(baseSettings.host),
-                            ":%s 322 john #1abc2 1 :".formatted(baseSettings.host),
-                            ":%s 323 john :End of /LIST".formatted(baseSettings.host)
+                            ":jircd-host 321 john Channel :Users  Name",
+                            ":jircd-host 322 john #42 1 :",
+                            ":jircd-host 322 john #azerty 1 :",
+                            ":jircd-host 322 john #AZERTY 1 :",
+                            ":jircd-host 322 john #1abc2 1 :",
+                            ":jircd-host 323 john :End of /LIST"
                     }, connections[1].awaitMessage(6).toArray());
 
                     connections[1].send("LIST #");
                     assertArrayEquals(new String[]{
-                            ":%s 321 john Channel :Users  Name".formatted(baseSettings.host),
-                            ":%s 323 john :End of /LIST".formatted(baseSettings.host)
+                            ":jircd-host 321 john Channel :Users  Name",
+                            ":jircd-host 323 john :End of /LIST"
                     }, connections[1].awaitMessage(2).toArray());
                 }
             }
         }
-    }
-
-    @AfterEach
-    void tearDown(TestInfo info) throws InterruptedException {
-        logger.info("{} test end", info.getDisplayName());
-        server.shutdown();
     }
 }
