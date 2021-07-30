@@ -11,7 +11,6 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 import java.net.Socket;
 import java.text.SimpleDateFormat;
 import java.util.*;
@@ -21,7 +20,7 @@ import org.slf4j.LoggerFactory;
 public class UserImpl extends Thread implements User {
 
     private final Socket           socket;
-    private final Thread           pingThread;
+    private final Timer            pingTimer;
     private final BufferedReader   input;
     private final DataOutputStream output;
     private final Logger           logger   = LoggerFactory.getLogger(User.class);
@@ -43,23 +42,21 @@ public class UserImpl extends Thread implements User {
         this.output   = new DataOutputStream(socket.getOutputStream());
         this.info     = new Info(this, server.settings());
         this.info.setHost(socket.getInetAddress().getHostAddress());
-        this.modes      = new Modes();
-        this.pingThread = new Thread(() -> {
-            logger.trace("Scheduled ping for {} to {}", this.info.host(),
-                         new SimpleDateFormat().format(new Date(nextPing)));
-            while (state != UserState.DISCONNECTED) {
+        this.modes     = new Modes();
+        this.pingTimer = new Timer("Socket-Ping-" + this.info.host());
+        this.pingTimer.schedule(new TimerTask() {
+            @Override
+            public void run() {
                 if (System.currentTimeMillis() >= nextPing && !pingSent) {
-                    logger.debug("Sent 'PING' to {}", this.info.host());
+                    logger.debug("Sent 'PING' to {}", info.host());
                     send("PING");
                     pingSent = true;
                 }
                 if (pingSent && System.currentTimeMillis() >= nextPing + server.settings().timeout) {
                     terminate("Timed out");
-                    return;
                 }
             }
-        }, "Socket-Ping-" + this.info.host());
-        this.pingThread.start();
+        }, 1000);
     }
 
     @Override
@@ -86,9 +83,9 @@ public class UserImpl extends Thread implements User {
                     terminate("Internal error");
                     e.printStackTrace();
                 }
-                return;
             }
         }
+        logger.trace("Interrupted thread for {}", info.format());
         super.run();
     }
 
@@ -123,6 +120,8 @@ public class UserImpl extends Thread implements User {
                     channel -> channel.broadcast(":" + info.format() + " QUIT :" + (kicked ? "" : "Quit: ") + reason));
             channels.forEach(channel -> ((ChannelImpl) channel).modifiableUsers().remove(this));
             channels.clear();
+            output.close();
+            input.close();
             socket.close();
             server.originalUsers().remove(this);
         } catch (IOException e) {
@@ -133,57 +132,33 @@ public class UserImpl extends Thread implements User {
 
     public void process(String line) throws InvocationTargetException, IllegalAccessException {
         String[] split   = line.contains(" ") ? line.split(" ", 2) : new String[]{line, ""};
-        String   command = split[0];
+        String   command = split[0].toUpperCase();
         String[] params  = split[1].contains(":") ? split[1].split(":") : new String[]{split[1]};
         String[] middle = params.length != 0 && !(params[0].isEmpty() || params[0].isBlank()) ? params[0].contains(
                 " ") ? params[0].split(" ") : new String[]{params[0]} : new String[0];
         String trailing = params.length == 2 ? params[1] : null;
 
-        int min = -1;
-        for (Object cmd : server.commands()) {
-            Class<?> clazz         = cmd.getClass();
-            String   nameByAClazz  = "__DEFAULT__";
-            boolean  clazzTrailing = false;
-            if (clazz.isAnnotationPresent(Command.class)) {
-                Command annotation = clazz.getAnnotation(Command.class);
-                nameByAClazz  = annotation.name();
-                clazzTrailing = annotation.trailing();
-            }
-            if (nameByAClazz.equals("__DEFAULT__")) {
-                nameByAClazz = clazz.getSimpleName();
-            }
-            for (Method method : clazz.getDeclaredMethods()) {
-                if (method.isAnnotationPresent(Command.class)) {
-                    Command annotation    = method.getAnnotation(Command.class);
-                    String  nameByAMethod = annotation.name();
-                    boolean asTrailing    = clazzTrailing || annotation.trailing();
-                    if (nameByAMethod.equals("__DEFAULT__")) {
-                        nameByAMethod = nameByAClazz;
-                    }
-                    if (nameByAMethod.equalsIgnoreCase(command)) {
-                        min = Math.min(min == -1 ? Integer.MAX_VALUE : min,
-                                       method.getParameterCount() - (asTrailing ? 2 : 1));
-                        if (method.getParameterCount() - (asTrailing ? 2 : 1) == middle.length) {
-                            Object[] args = new Object[method.getParameterCount()];
-                            args[0] = this;
-                            System.arraycopy(middle, 0, args, 1, middle.length);
-                            if (asTrailing) {
-                                if (trailing != null) {
-                                    args[args.length - 1] = trailing;
-                                } else {
-                                    continue;
-                                }
-                            }
-                            method.invoke(cmd, args);
-                            return;
-                        }
-                    }
-                }
-            }
+        if (!server.commands().containsKey(command)) {
+            return;
         }
-        if (min > 0) {
-            send(Message.ERR_NEEDMOREPARAMS.parameters(info.format(), command));
+        Map<Command.CommandIdentifier, Command.CommandIdentity> commandMap = server.commands().get(command);
+        Command.CommandIdentifier identifier = new Command.CommandIdentifier(
+                middle.length, trailing != null);
+        if (!commandMap.containsKey(identifier)) {
+            commandMap.keySet()
+                      .stream()
+                      .min(Comparator.comparingInt(Command.CommandIdentifier::parametersCount))
+                      .ifPresent(min -> send(Message.ERR_NEEDMOREPARAMS.parameters(info.format(), command)));
         }
+        Command.CommandIdentity cmd = commandMap.get(identifier);
+
+        Object[] args = new Object[cmd.method().getParameterCount()];
+        args[0] = this;
+        System.arraycopy(middle, 0, args, 1, middle.length);
+        if (identifier.hasTrailing()) {
+            args[args.length - 1] = trailing;
+        }
+        cmd.method().invoke(cmd.instance(), args);
     }
 
     @Override
