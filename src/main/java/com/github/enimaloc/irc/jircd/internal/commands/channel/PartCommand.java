@@ -41,8 +41,6 @@ public class PartCommand {
             }
             Channel channelObj = channelOpt.get();
 
-            ((UserImpl) user).modifiableChannels().remove(channelObj);
-            ((ChannelImpl) channelObj).modifiableUsers().remove(user);
             channelObj.broadcast(
                     ":%s PART %s%s".formatted(user.info().format(),
                                               channelName,
@@ -50,6 +48,8 @@ public class PartCommand {
                                                       "" :
                                                       " :" + reason)
             );
+            ((UserImpl) user).modifiableChannels().remove(channelObj);
+            ((ChannelImpl) channelObj).modifiableUsers().remove(user);
             if (channelObj.users().isEmpty()) {
                 ((JIRCDImpl) user.server()).originalChannels().remove(channelObj);
             }

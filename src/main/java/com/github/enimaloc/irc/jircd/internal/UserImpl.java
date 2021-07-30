@@ -116,10 +116,11 @@ public class UserImpl extends Thread implements User {
         try {
             logger.debug("Disconnected with reason: '{}'", reason);
             state = UserState.DISCONNECTED;
-            channels.forEach(
+            this.channels.forEach(channel -> ((ChannelImpl) channel).modifiableUsers().remove(this));
+            this.channels.stream().filter(c -> c.users().isEmpty()).forEach(server.originalChannels()::remove);
+            this.channels.forEach(
                     channel -> channel.broadcast(":" + info.format() + " QUIT :" + (kicked ? "" : "Quit: ") + reason));
-            channels.forEach(channel -> ((ChannelImpl) channel).modifiableUsers().remove(this));
-            channels.clear();
+            this.channels.clear();
             output.close();
             input.close();
             socket.close();
