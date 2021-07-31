@@ -4,6 +4,7 @@ import com.github.enimaloc.irc.jircd.internal.JIRCDImpl;
 import com.github.enimaloc.irc.jircd.internal.SupportAttribute;
 import com.github.enimaloc.irc.jircd.internal.commands.Command;
 import java.io.IOException;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
@@ -20,7 +21,13 @@ public interface JIRCD {
 
     Map<String, Map<Command.CommandIdentifier, Command.CommandIdentity>> commands();
 
+    Map<String, Integer> commandUsage();
+
+    Date createdAt();
+
     SupportAttribute supportAttribute();
+
+    String[] infos();
 
     class Builder {
         private ServerSettings serverSettings = new ServerSettings();

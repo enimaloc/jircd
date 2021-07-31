@@ -45,7 +45,7 @@ public class TopicCommand {
             return;
         }
 
-        if (!channel.prefix(user).matches("[@%]")) {
+        if (!channel.prefix(user).matches("[@%]") && channel.modes()._protected()) {
             user.send(Message.ERR_CHANOPRIVSNEEDED.parameters(user.info().format(), channelName));
             return;
         }

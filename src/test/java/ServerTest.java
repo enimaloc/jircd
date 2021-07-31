@@ -10,6 +10,9 @@ import java.net.BindException;
 import java.net.Socket;
 import java.net.SocketTimeoutException;
 import java.nio.charset.StandardCharsets;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BooleanSupplier;
@@ -27,7 +30,7 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
 class ServerTest {
     public static final String ENDING                         = "\r\n";
     public static final long   TIME_OUT_BETWEEN_COMMUNICATION = 100;
-    public static final int    TIME_OUT_WHEN_WAITING_RESPONSE = 1000;
+    public static final int    TIME_OUT_WHEN_WAITING_RESPONSE = 100;
 
     public static final String[] EMPTY_ARRAY  = new String[0];
     public static final String[] SOCKET_CLOSE = new String[]{null};
@@ -538,13 +541,11 @@ class ServerTest {
             void fullConnectionWithMOTDTest() throws IOException {
                 File tempFile = File.createTempFile("motd", "txt");
                 tempFile.deleteOnExit();
-                System.out.println("tempFile.getAbsolutePath() = " + tempFile.getAbsolutePath());
                 FileWriter writer = new FileWriter(tempFile);
-                writer.write("Custom motd set in " + tempFile.getAbsolutePath());
+                writer.write("Custom motd set in temp file");
                 writer.close();
 
                 setSettings(baseSettings.copy(new ServerSettings(tempFile), field -> !field.getName().equals("motd")));
-                System.out.println("server.settings() = " + server.settings());
 
                 connections[0].send("PASS " + baseSettings.pass);
                 assertArrayEquals(EMPTY_ARRAY, connections[0].awaitMessage());
@@ -644,16 +645,10 @@ class ServerTest {
                 }
 
                 assertArrayEquals(new String[]{
-                        ":jircd-host 375 bob :- jircd-host Message of the day - "
-                }, connections[0].awaitMessage());
-                for (String motd : baseSettings.motd) {
-                    assertArrayEquals(new String[]{
-                            ":jircd-host 372 bob :%s".formatted(motd)
-                    }, connections[0].awaitMessage());
-                }
-                assertArrayEquals(new String[]{
+                        ":jircd-host 375 bob :- jircd-host Message of the day - ",
+                        ":jircd-host 372 bob :Custom motd set in temp file",
                         ":jircd-host 376 bob :End of /MOTD command."
-                }, connections[0].awaitMessage());
+                }, connections[0].awaitMessage(3));
                 User bob = server.users().get(0);
                 assertEquals(UserState.LOGGED, bob.state());
 
@@ -1225,14 +1220,39 @@ class ServerTest {
 
                     connections[1].createUser("john", "John Doe");
                     assumeFalse(server.users().isEmpty());
-                    ((ChannelImpl) channel).modifiableBans().add(server.users().get(1));
-                    assumeFalse(channel.bans().isEmpty());
+                    channel.modes().bans().add("john!*@*");
+                    assumeFalse(channel.modes().bans().isEmpty());
 
                     connections[1].send("JOIN #jircd");
                     assertArrayEquals(new String[]{
                             ":jircd-host 474 john #jircd :Cannot join channel (+b)"
                     }, connections[1].awaitMessage());
                     assertEquals(1, channel.users().size());
+                }
+
+                @Test
+                void joinBannedChannelButExceptTest() {
+                    addConnections(1);
+                    connections[0].send("JOIN #jircd");
+                    connections[0].ignoreMessage(4);
+                    Optional<Channel> channelOpt = getChannel("#jircd");
+                    assertFalse(channelOpt.isEmpty());
+                    Channel channel = channelOpt.get();
+
+                    connections[1].createUser("john", "John Doe");
+                    assumeFalse(server.users().isEmpty());
+                    channel.modes().bans().add("john!*@*");
+                    assumeFalse(channel.modes().bans().isEmpty());
+                    channel.modes().except().add("john!john@*");
+                    assumeFalse(channel.modes().except().isEmpty());
+
+                    connections[1].send("JOIN #jircd");
+                    assertArrayEquals(new String[]{
+                            ":john JOIN #jircd",
+                            ":jircd-host 353 john = #jircd :%bob john",
+                            ":jircd-host 366 john #jircd :End of /NAMES list"
+                    }, connections[1].awaitMessage(3));
+                    assertEquals(2, channel.users().size());
                 }
 
                 @Test
@@ -1466,7 +1486,28 @@ class ServerTest {
                 }
 
                 @Test
-                void topicChangeButNoPermTest() {
+                void protectedTopicChangeButNoPermTest() {
+                    addConnections(1);
+                    connections[0].send("JOIN #jircd");
+                    connections[0].ignoreMessage(3);
+                    Optional<Channel> channelOpt = getChannel("#jircd");
+                    assertFalse(channelOpt.isEmpty());
+                    Channel channel = channelOpt.get();
+                    channel.modes()._protected(true);
+
+                    assumeFalse(channel.users().isEmpty());
+                    connections[1].createUser("john", "John Doe");
+                    connections[1].send("JOIN #jircd");
+                    connections[1].send("TOPIC #jircd :Another topic");
+                    connections[1].ignoreMessage(3);
+                    assertArrayEquals(new String[]{
+                            ":jircd-host 482 john #jircd :You're not channel operator"
+                    }, connections[1].awaitMessage());
+                    assertTrue(channel.topic().isEmpty());
+                }
+
+                @Test
+                void nonProtectedTopicChangeButNoPermTest() {
                     addConnections(1);
                     connections[0].send("JOIN #jircd");
                     connections[0].ignoreMessage(3);
@@ -1480,9 +1521,9 @@ class ServerTest {
                     connections[1].send("TOPIC #jircd :Another topic");
                     connections[1].ignoreMessage(3);
                     assertArrayEquals(new String[]{
-                            ":jircd-host 482 john #jircd :You're not channel operator"
+                            ":jircd-host 332 john #jircd :Another topic"
                     }, connections[1].awaitMessage());
-                    assertTrue(channel.topic().isEmpty());
+                    assertFalse(channel.topic().isEmpty());
                 }
 
                 @Test
@@ -1743,6 +1784,760 @@ class ServerTest {
                             ":jircd-host 321 john Channel :Users  Name",
                             ":jircd-host 323 john :End of /LIST"
                     }, connections[1].awaitMessage(2));
+                }
+            }
+        }
+
+        @Nested
+        class ServerQueriesAndCommands {
+
+            @BeforeEach
+            void setUp() {
+                connections[0].createUser("bob", "bobby", "Mobbye Plav");
+            }
+
+            @FullModuleTest
+            @Disabled
+            void fullServerQueriesAndCommandsTest() {
+
+            }
+
+            @Nested
+            class MotdCommand {
+                @Test
+                void motdWithUnknownServerTest() {
+                    connections[0].send("MOTD UnknownServer");
+                    assertArrayEquals(new String[]{
+                            ":jircd-host 402 bob UnknownServer :No such server"
+                    }, connections[0].awaitMessage());
+                }
+
+                @Test
+                void motdWithNoMOTDTest() {
+                    assumeTrue(server.settings().motd.length == 0);
+                    connections[0].send("MOTD");
+                    assertArrayEquals(new String[]{
+                            ":jircd-host 422 bob :MOTD File is missing"
+                    }, connections[0].awaitMessage());
+                }
+
+                @Test
+                void motdTest() throws IOException {
+                    File tempFile = File.createTempFile("motd", "txt");
+                    tempFile.deleteOnExit();
+                    FileWriter writer = new FileWriter(tempFile);
+                    writer.write("Custom motd set in temp file");
+                    writer.close();
+
+                    setSettings(
+                            baseSettings.copy(new ServerSettings(tempFile), field -> !field.getName().equals("motd")));
+
+                    assumeFalse(server.settings().motd.length == 0);
+                    connections[0].send("MOTD");
+                    assertArrayEquals(new String[]{
+                            ":jircd-host 375 bob :- jircd-host Message of the day - ",
+                            ":jircd-host 372 bob :Custom motd set in temp file",
+                            ":jircd-host 376 bob :End of /MOTD command."
+                    }, connections[0].awaitMessage(3));
+                }
+            }
+
+            @Nested
+            class VersionCommand {
+                @Test
+                void versionWithUnknownServerTest() {
+                    connections[0].send("VERSION UnknownServer");
+                    assertArrayEquals(new String[]{
+                            ":jircd-host 402 bob UnknownServer :No such server"
+                    }, connections[0].awaitMessage());
+                }
+
+                @Test
+                void versionTest() {
+                    connections[0].send("VERSION");
+
+                    assertArrayEquals(new String[]{
+                            ":jircd-host 351 bob %s jircd-host :".formatted(Constant.VERSION)
+                    }, connections[0].awaitMessage());
+
+                    SupportAttribute attr = server.supportAttribute();
+                    for (int i = 0; i < attrLength; i++) {
+                        String[] messages = connections[0].awaitMessage();
+                        if (messages.length == 0) {
+                            continue;
+                        }
+                        String isSupport = messages[0];
+                        assertTrue(isSupport.startsWith(":jircd-host 005 bob "));
+                        assertTrue(isSupport.endsWith(":are supported by this server"));
+                        isSupport = isSupport.replaceFirst(":jircd-host 005 bob ", "")
+                                             .replace(" :are supported by this server", "");
+
+                        String[] attributes = isSupport.split(" ");
+                        assertTrue(attributes.length <= 13);
+                        for (String attribute : attributes) {
+                            String key = attribute.contains("=") ?
+                                    attribute.split("=")[0] :
+                                    attribute;
+                            String              value         = attribute.contains("=") ?
+                                    attribute.split("=")[1] :
+                                    null;
+                            Map<String, Object> map           = attr.asMap((s, o) -> s.equalsIgnoreCase(key));
+                            String              fieldName     = (String) map.keySet().toArray()[0];
+                            Object              expectedValue = map.values().toArray()[0];
+                            Class<?>            expectedClazz = null;
+                            Class<?>            actualClazz   = null;
+                            Object              actualValue   = null;
+                            if (value != null) {
+                                try {
+                                    actualValue = Integer.parseInt(value);
+                                    actualClazz = Integer.class;
+                                } catch (NumberFormatException ignored) {
+                                    if (value.equals("true") || value.equals("false")) {
+                                        actualValue = Boolean.parseBoolean(value);
+                                        actualClazz = Boolean.class;
+                                    } else {
+                                        if (value.contains(",") && Arrays.stream(value.split(",")).allMatch(
+                                                s -> s.length() == 1)) {
+                                            actualValue = value.toCharArray();
+                                            actualClazz = Character[].class;
+                                        } else {
+                                            actualValue = value;
+                                            actualClazz = String.class;
+                                        }
+                                    }
+                                }
+                            }
+                            if (expectedValue instanceof Optional) {
+                                try {
+                                    if (value == null) {
+                                        actualClazz
+                                                      = (Class<?>) ((ParameterizedType) SupportAttribute.class.getDeclaredField(
+                                                fieldName).getGenericType()).getActualTypeArguments()[0];
+                                        expectedValue = null;
+                                    }
+                                    expectedClazz
+                                                  = (Class<?>) ((ParameterizedType) SupportAttribute.class.getDeclaredField(
+                                            fieldName).getGenericType()).getActualTypeArguments()[0];
+                                    expectedValue = expectedValue != null ?
+                                            ((Optional<?>) expectedValue).orElse(null) :
+                                            null;
+                                } catch (NoSuchFieldException e) {
+                                    fail(e);
+                                }
+                            } else if (expectedValue instanceof OptionalInt) {
+                                if (value == null) {
+                                    actualClazz   = Integer.class;
+                                    expectedValue = null;
+                                }
+                                expectedClazz = Integer.class;
+                                // Is present is not detected by idea here
+                                //noinspection OptionalGetWithoutIsPresent
+                                expectedValue = expectedValue != null && ((OptionalInt) expectedValue).isPresent() ?
+                                        ((OptionalInt) expectedValue).getAsInt() :
+                                        null;
+                            } else {
+                                expectedClazz = expectedValue.getClass();
+                            }
+
+                            assertEquals(expectedValue, actualValue);
+                            assertEquals(expectedClazz, actualClazz);
+                        }
+                    }
+                }
+            }
+
+            @Nested
+            class AdminCommand {
+                @Test
+                void adminWithUnknownServerTest() {
+                    connections[0].send("ADMIN UnknownServer");
+                    assertArrayEquals(new String[]{
+                            ":jircd-host 402 bob UnknownServer :No such server"
+                    }, connections[0].awaitMessage());
+                }
+
+                @Test
+                void adminTest() {
+                    connections[0].send("ADMIN");
+
+                    assertArrayEquals(new String[]{
+                            ":jircd-host 256 bob jircd-host :Administrative info",
+                            ":jircd-host 257 bob :",
+                            ":jircd-host 258 bob :",
+                            ":jircd-host 259 bob :"
+                    }, connections[0].awaitMessage(4));
+                }
+            }
+
+            @Nested
+            class ConnectCommand {
+                @Test
+                void connectErrorTest() {
+                    connections[0].send("CONNECT one");
+                    assertArrayEquals(new String[]{
+                            ":jircd-host 400 bob CONNECT :Not supported yet"
+                    }, connections[0].awaitMessage());
+
+                    connections[0].send("CONNECT one two");
+                    assertArrayEquals(new String[]{
+                            ":jircd-host 400 bob CONNECT :Not supported yet"
+                    }, connections[0].awaitMessage());
+
+                    connections[0].send("CONNECT one two three");
+                    assertArrayEquals(new String[]{
+                            ":jircd-host 400 bob CONNECT :Not supported yet"
+                    }, connections[0].awaitMessage());
+                }
+
+                @Test
+                @Disabled("Not supported yet")
+                void connectOneArgumentTest() {
+                    connections[0].send("CONNECT one");
+                }
+
+                @Test
+                @Disabled("Not supported yet")
+                void connectTwoArgumentTest() {
+                    connections[0].send("CONNECT one two");
+                }
+
+                @Test
+                @Disabled("Not supported yet")
+                void connectThreeArgumentTest() {
+                    connections[0].send("CONNECT one two three");
+                }
+            }
+
+            @Nested
+            class TimeCommand {
+                @Test
+                void timeWithUnknownServerTest() {
+                    connections[0].send("TIME UnknownServer");
+                    assertArrayEquals(new String[]{
+                            ":jircd-host 402 bob UnknownServer :No such server"
+                    }, connections[0].awaitMessage());
+                }
+
+                @Test
+                void timeTest() {
+                    connections[0].send("TIME");
+
+                    assertArrayEquals(new String[]{
+                            ":jircd-host 391 jircd-host :%s".formatted(
+                                    DateTimeFormatter.ofPattern("EEEE LLLL dd yyyy - HH:mm O", Locale.ENGLISH)
+                                                     .format(ZonedDateTime.now()))
+                    }, connections[0].awaitMessage());
+                }
+            }
+
+            @Nested
+            class StatsCommand {
+                @Test
+                @Disabled("No completed")
+                void statsCTest() {
+                    connections[0].send("STATS c");
+                }
+
+                @Test
+                @Disabled("No completed")
+                void statsHTest() {
+                    connections[0].send("STATS h");
+                }
+
+                @Test
+                @Disabled("No completed")
+                void statsITest() {
+                    connections[0].send("STATS i");
+                }
+
+                @Test
+                @Disabled("No completed")
+                void statsKTest() {
+                    connections[0].send("STATS k");
+                }
+
+                @Test
+                @Disabled("No completed")
+                void statsLTest() {
+                    connections[0].send("STATS l");
+                }
+
+                @Test
+                void statsMTest() {
+                    connections[0].send("STATS m");
+                    assertArrayEquals(new String[]{
+                            ":jircd-host 212 NAMES 0",
+                            ":jircd-host 212 NICK 1",
+                            ":jircd-host 212 STATS 1",
+                            ":jircd-host 212 MODE 0",
+                            ":jircd-host 212 JOIN 0",
+                            ":jircd-host 212 QUIT 0",
+                            ":jircd-host 212 CONNECT 0",
+                            ":jircd-host 212 TIME 0",
+                            ":jircd-host 212 OPER 0",
+                            ":jircd-host 212 TOPIC 0",
+                            ":jircd-host 212 USER 1",
+                            ":jircd-host 212 INFO 0",
+                            ":jircd-host 212 PASS 1",
+                            ":jircd-host 212 PART 0",
+                            ":jircd-host 212 MOTD 0",
+                            ":jircd-host 212 VERSION 0",
+                            ":jircd-host 212 ADMIN 0",
+                            ":jircd-host 212 LIST 0",
+                            ":jircd-host 219 M :End of /STATS report"
+                    }, connections[0].awaitMessage(19));
+                }
+
+                @Test
+                @Disabled("No completed")
+                void statsOTest() {
+                    connections[0].send("STATS o");
+                }
+
+                @Test
+                void statsUTest() {
+                    connections[0].send("STATS u");
+                    assertArrayEquals(new String[]{
+                            ":jircd-host 242 :Server Up 0 days 0:00:%02d".formatted(
+                                    ChronoUnit.SECONDS.between(server.createdAt().toInstant(), ZonedDateTime.now())),
+                            ":jircd-host 219 U :End of /STATS report"
+                    }, connections[0].awaitMessage(2));
+                }
+
+                @Test
+                @Disabled("No completed")
+                void statsYTest() {
+                    connections[0].send("STATS y");
+                }
+            }
+
+            @Nested
+            class InfoCommand {
+                @Test
+                void infoWithUnknownServerTest() {
+                    connections[0].send("INFO UnknownServer");
+                    assertArrayEquals(new String[]{
+                            ":jircd-host 402 bob UnknownServer :No such server"
+                    }, connections[0].awaitMessage());
+                }
+
+                @Test
+                void infoTest() {
+                    connections[0].send("INFO");
+                    assertArrayEquals(new String[]{
+                            ":jircd-host 371 :jircd v%s".formatted(Constant.VERSION),
+                            ":jircd-host 371 :by Antoine <antoine@enimaloc.fr>",
+                            ":jircd-host 371 :Source code: https://github.com/enimaloc/jircd",
+                            ":jircd-host 374 :End of /INFO list"
+                    }, connections[0].awaitMessage(4));
+                }
+            }
+
+            @Nested
+            class ModeCommand {
+
+                @Nested
+                class UserMode {
+
+                    UserImpl user;
+
+                    @BeforeEach
+                    void setUp() {
+                        assumeFalse(server.users().isEmpty());
+                        assumeFalse((user = (UserImpl) server.users().get(0)) == null);
+                        assumeTrue(user.info().format().equals("bob"));
+                    }
+
+                    @Test
+                    void modeWithDifferentTargetTest() {
+                        connections[0].send("MODE notBob");
+                        assertArrayEquals(new String[]{
+                                ":jircd-host 502 bob :Cant change mode for other users"
+                        }, connections[0].awaitMessage());
+                    }
+
+                    @Test
+                    void modeTest() {
+                        assumeTrue(user.modes().modes().isEmpty());
+                        connections[0].send("MODE bob");
+                        assertArrayEquals(new String[]{
+                                ":jircd-host 221 bob "
+                        }, connections[0].awaitMessage());
+                    }
+
+                    @Nested
+                    class Add {
+                        @Test
+                        void modeInvisibleTest() {
+                            assumeFalse(user.modes().invisible());
+                            connections[0].send("MODE bob +i");
+                            assertArrayEquals(new String[]{
+                                    ":jircd-host 221 bob i"
+                            }, connections[0].awaitMessage());
+                            assertTrue(user.modes().invisible());
+                        }
+
+                        @Test
+                        void modeOperTest() {
+                            assumeFalse(user.modes().oper());
+                            connections[0].send("MODE bob +o");
+                            assertArrayEquals(new String[]{
+                                    ":jircd-host 221 bob "
+                            }, connections[0].awaitMessage());
+                            assertFalse(user.modes().oper());
+                        }
+
+                        @Test
+                        void modeLocalOperTest() {
+                            assumeFalse(user.modes().localOper());
+                            connections[0].send("MODE bob +O");
+                            assertArrayEquals(new String[]{
+                                    ":jircd-host 221 bob "
+                            }, connections[0].awaitMessage());
+                            assertFalse(user.modes().localOper());
+                        }
+
+                        @Test
+                        void modeWallopsTest() {
+                            assumeFalse(user.modes().wallops());
+                            connections[0].send("MODE bob +w");
+                            assertArrayEquals(new String[]{
+                                    ":jircd-host 221 bob w"
+                            }, connections[0].awaitMessage());
+                            assertTrue(user.modes().wallops());
+                        }
+
+                        @Test
+                        void modeInvalidTest() {
+                            connections[0].send("MODE bob +z");
+                            assertArrayEquals(new String[]{
+                                    ":jircd-host 501 bob :Unknown MODE flag"
+                            }, connections[0].awaitMessage());
+                            assertTrue(user.modes().modes().isEmpty());
+                        }
+                    }
+
+                    @Nested
+                    class Remove {
+                        @Test
+                        void modeInvisibleTest() {
+                            user.modes().invisible(true);
+                            assumeTrue(user.modes().invisible());
+
+                            connections[0].send("MODE bob -i");
+                            assertArrayEquals(new String[]{
+                                    ":jircd-host 221 bob "
+                            }, connections[0].awaitMessage());
+                            assertFalse(user.modes().invisible());
+                        }
+
+                        @Test
+                        void modeOperTest() {
+                            user.modes().oper(true);
+                            assumeTrue(user.modes().oper());
+
+                            connections[0].send("MODE bob -o");
+                            assertArrayEquals(new String[]{
+                                    ":jircd-host 221 bob "
+                            }, connections[0].awaitMessage());
+                            assertFalse(user.modes().oper());
+                        }
+
+                        @Test
+                        void modeLocalOperTest() {
+                            user.modes().localOper(true);
+                            assumeTrue(user.modes().localOper());
+
+                            connections[0].send("MODE bob -O");
+                            assertArrayEquals(new String[]{
+                                    ":jircd-host 221 bob "
+                            }, connections[0].awaitMessage());
+                            assertFalse(user.modes().localOper());
+                        }
+
+                        @Test
+                        void modeWallopsTest() {
+                            user.modes().wallops(true);
+                            assumeTrue(user.modes().wallops());
+
+                            connections[0].send("MODE bob -w");
+                            assertArrayEquals(new String[]{
+                                    ":jircd-host 221 bob "
+                            }, connections[0].awaitMessage());
+                            assertFalse(user.modes().wallops());
+                        }
+
+                        @Test
+                        void modeInvalidTest() {
+                            connections[0].send("MODE bob -z");
+                            assertArrayEquals(new String[]{
+                                    ":jircd-host 501 bob :Unknown MODE flag"
+                            }, connections[0].awaitMessage());
+                            assertTrue(user.modes().modes().isEmpty());
+                        }
+                    }
+                }
+
+                @Nested
+                class ChannelMode {
+                    ChannelImpl channel;
+
+                    @BeforeEach
+                    void setUp() {
+                        connections[0].send("JOIN #bob");
+                        connections[0].ignoreMessage(3);
+                        Optional<Channel> channelOpt = getChannel("#bob");
+                        assumeTrue(channelOpt.isPresent());
+                        this.channel = (ChannelImpl) channelOpt.get();
+                    }
+
+                    @Test
+                    void modeWithDifferentTargetTest() {
+                        assumeTrue(getChannel("#unknown").isEmpty());
+                        connections[0].send("MODE #unknown");
+                        assertArrayEquals(new String[]{
+                                ":jircd-host 403 bob #unknown :No such channel"
+                        }, connections[0].awaitMessage());
+                    }
+
+                    @Test
+                    void modeTest() {
+                        assumeTrue(channel.modes().modesString().isEmpty());
+                        connections[0].send("MODE #bob");
+                        assertArrayEquals(new String[]{
+                                ":jircd-host 324 bob #bob  "
+                        }, connections[0].awaitMessage());
+                    }
+
+                    @Nested
+                    class Add {
+                        @Test
+                        void modeBanTest() {
+                            connections[0].send("MODE #bob +b john!*@*");
+                            assertArrayEquals(new String[]{
+                                    ":bob MODE #bob +b john!*@*"
+                            }, connections[0].awaitMessage());
+                            assertFalse(channel.modes().bans().isEmpty());
+                            assertTrue(channel.modes().bans().contains("john!*@*"));
+                        }
+
+                        @Test
+                        void modeExceptsTest() {
+                            connections[0].send("MODE #bob +e john!john@*");
+                            assertArrayEquals(new String[]{
+                                    ":bob MODE #bob +e john!john@*"
+                            }, connections[0].awaitMessage());
+                            assertFalse(channel.modes().except().isEmpty());
+                            assertTrue(channel.modes().except().contains("john!john@*"));
+                        }
+
+                        @Test
+                        void modeLimitTest() {
+                            connections[0].send("MODE #bob +l 5");
+                            assertArrayEquals(new String[]{
+                                    ":bob MODE #bob +l 5"
+                            }, connections[0].awaitMessage());
+                            assertTrue(channel.modes().limit().isPresent());
+                            assertEquals(5, channel.modes().limit().getAsInt());
+                        }
+
+                        @Test
+                        void modeInviteOnlyTest() {
+                            connections[0].send("MODE #bob +i");
+                            assertArrayEquals(new String[]{
+                                    ":bob MODE #bob +i"
+                            }, connections[0].awaitMessage());
+                            assertTrue(channel.modes().inviteOnly());
+                        }
+
+                        @Test
+                        void modeInvExTest() {
+                            connections[0].send("MODE #bob +I john!*@*");
+                            assertArrayEquals(new String[]{
+                                    ":bob MODE #bob +I john!*@*"
+                            }, connections[0].awaitMessage());
+                            assertFalse(channel.modes().invEx().isEmpty());
+                            assertTrue(channel.modes().invEx().contains("john!*@*"));
+                        }
+
+                        @Test
+                        void modeKeyChannelTest() {
+                            connections[0].send("MODE #bob +k keypass");
+                            assertArrayEquals(new String[]{
+                                    ":bob MODE #bob +k keypass"
+                            }, connections[0].awaitMessage());
+                            assertTrue(channel.modes().password().isPresent());
+                            assertEquals("keypass", channel.modes().password().get());
+                        }
+
+                        @Test
+                        void modeModerateTest() {
+                            connections[0].send("MODE #bob +m");
+                            assertArrayEquals(new String[]{
+                                    ":bob MODE #bob +m"
+                            }, connections[0].awaitMessage());
+                            assertTrue(channel.modes().moderate());
+                        }
+
+                        @Test
+                        void modeSecretTest() {
+                            connections[0].send("MODE #bob +s");
+                            assertArrayEquals(new String[]{
+                                    ":bob MODE #bob +s"
+                            }, connections[0].awaitMessage());
+                            assertTrue(channel.modes().secret());
+                        }
+
+                        @Test
+                        void modeProtectedTopicTest() {
+                            connections[0].send("MODE #bob +t");
+                            assertArrayEquals(new String[]{
+                                    ":bob MODE #bob +t"
+                            }, connections[0].awaitMessage());
+                            assertTrue(channel.modes()._protected());
+                        }
+
+                        @Test
+                        void modeNoExternalTest() {
+                            connections[0].send("MODE #bob +n");
+                            assertArrayEquals(new String[]{
+                                    ":bob MODE #bob +n"
+                            }, connections[0].awaitMessage());
+                            assertTrue(channel.modes().noExternalMessage());
+                        }
+
+                        @Test
+                        void modeInvalidTest() {
+                            connections[0].send("MODE #bob +z");
+                            assertArrayEquals(new String[]{
+                                    ":jircd-host 501 bob :Unknown MODE flag"
+                            }, connections[0].awaitMessage());
+                            assertTrue(channel.modes().modesString().isEmpty());
+                        }
+                    }
+
+                    @Nested
+                    class Remove {
+                        @Test
+                        void modeBanTest() {
+                            channel.modes().bans().add("john!*@*");
+                            assumeFalse(channel.modes().bans().isEmpty());
+                            connections[0].send("MODE #bob -b john!*@*");
+                            assertArrayEquals(new String[]{
+                                    ":bob MODE #bob -b john!*@*"
+                            }, connections[0].awaitMessage());
+                            assertTrue(channel.modes().bans().isEmpty());
+                        }
+
+                        @Test
+                        void modeExceptsTest() {
+                            channel.modes().except().add("john!john@*");
+                            assumeFalse(channel.modes().except().isEmpty());
+                            connections[0].send("MODE #bob -e john!john@*");
+                            assertArrayEquals(new String[]{
+                                    ":bob MODE #bob -e john!john@*"
+                            }, connections[0].awaitMessage());
+                            assertTrue(channel.modes().except().isEmpty());
+                        }
+
+                        @Test
+                        void modeLimitTest() {
+                            channel.modes().limit(5);
+                            assumeFalse(channel.modes().limit().isEmpty());
+                            assumeTrue(channel.modes().limit().getAsInt() == 5);
+                            connections[0].send("MODE #bob -l 5");
+                            assertArrayEquals(new String[]{
+                                    ":bob MODE #bob -l 5"
+                            }, connections[0].awaitMessage());
+                            assumeTrue(channel.modes().limit().isEmpty());
+                        }
+
+                        @Test
+                        void modeInviteOnlyTest() {
+                            channel.modes().inviteOnly(true);
+                            assumeTrue(channel.modes().inviteOnly());
+                            connections[0].send("MODE #bob -i");
+                            assertArrayEquals(new String[]{
+                                    ":bob MODE #bob -i"
+                            }, connections[0].awaitMessage());
+                            assertFalse(channel.modes().inviteOnly());
+                        }
+
+                        @Test
+                        void modeInvExTest() {
+                            channel.modes().invEx().add("john!*@*");
+                            assumeFalse(channel.modes().invEx().isEmpty());
+                            connections[0].send("MODE #bob -I john!*@*");
+                            assertArrayEquals(new String[]{
+                                    ":bob MODE #bob -I john!*@*"
+                            }, connections[0].awaitMessage());
+                            assertTrue(channel.modes().invEx().isEmpty());
+                        }
+
+                        @Test
+                        void modeKeyChannelTest() {
+                            channel.modes().password("keypass");
+                            assumeFalse(channel.modes().password().isEmpty());
+                            connections[0].send("MODE #bob -k keypass");
+                            assertArrayEquals(new String[]{
+                                    ":bob MODE #bob -k *"
+                            }, connections[0].awaitMessage());
+                            assertTrue(channel.modes().password().isEmpty());
+                        }
+
+                        @Test
+                        void modeModerateTest() {
+                            channel.modes().moderate(true);
+                            assumeTrue(channel.modes().moderate());
+                            connections[0].send("MODE #bob -m");
+                            assertArrayEquals(new String[]{
+                                    ":bob MODE #bob -m"
+                            }, connections[0].awaitMessage());
+                            assertFalse(channel.modes().moderate());
+                        }
+
+                        @Test
+                        void modeSecretTest() {
+                            channel.modes().secret(true);
+                            assumeTrue(channel.modes().secret());
+                            connections[0].send("MODE #bob -s");
+                            assertArrayEquals(new String[]{
+                                    ":bob MODE #bob -s"
+                            }, connections[0].awaitMessage());
+                            assertFalse(channel.modes().moderate());
+                        }
+
+                        @Test
+                        void modeProtectedTopicTest() {
+                            channel.modes()._protected(true);
+                            assumeTrue(channel.modes()._protected());
+                            connections[0].send("MODE #bob -t");
+                            assertArrayEquals(new String[]{
+                                    ":bob MODE #bob -t"
+                            }, connections[0].awaitMessage());
+                            assertFalse(channel.modes()._protected());
+                        }
+
+                        @Test
+                        void modeNoExternalTest() {
+                            channel.modes().noExternalMessage(true);
+                            assumeTrue(channel.modes().noExternalMessage());
+                            connections[0].send("MODE #bob -n");
+                            assertArrayEquals(new String[]{
+                                    ":bob MODE #bob -n"
+                            }, connections[0].awaitMessage());
+                            assertFalse(channel.modes().noExternalMessage());
+                        }
+
+                        @Test
+                        void modeInvalidTest() {
+                            connections[0].send("MODE #bob -z");
+                            assertArrayEquals(new String[]{
+                                    ":jircd-host 501 bob :Unknown MODE flag"
+                            }, connections[0].awaitMessage());
+                            assertTrue(channel.modes().modesString().isEmpty());
+                        }
+                    }
                 }
             }
         }

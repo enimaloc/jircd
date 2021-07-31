@@ -6,6 +6,7 @@ import com.github.enimaloc.irc.jircd.api.JIRCD;
 import com.github.enimaloc.irc.jircd.api.Message;
 import com.github.enimaloc.irc.jircd.api.User;
 import com.github.enimaloc.irc.jircd.internal.commands.Command;
+import com.github.enimaloc.irc.jircd.internal.commands.server.VersionCommand;
 import java.io.BufferedReader;
 import java.io.DataOutputStream;
 import java.io.IOException;
@@ -75,7 +76,7 @@ public class UserImpl extends Thread implements User {
                     pingSent = false;
                     logger.trace("Rescheduled ping for {} to {}", this.info.host(),
                                  new SimpleDateFormat().format(new Date(nextPing)));
-                    process(line);
+                    process(line, false);
                 }
             } catch (IOException | InvocationTargetException | IllegalAccessException e) {
                 if ((e.getMessage() == null || !e.getMessage().equals("Socket closed")) &&
@@ -132,6 +133,10 @@ public class UserImpl extends Thread implements User {
 
 
     public void process(String line) throws InvocationTargetException, IllegalAccessException {
+        process(line, true);
+    }
+
+    public void process(String line, boolean systemInvoke) throws InvocationTargetException, IllegalAccessException {
         String[] split   = line.contains(" ") ? line.split(" ", 2) : new String[]{line, ""};
         String   command = split[0].toUpperCase();
         String[] params  = split[1].contains(":") ? split[1].split(":") : new String[]{split[1]};
@@ -141,6 +146,9 @@ public class UserImpl extends Thread implements User {
 
         if (!server.commands().containsKey(command)) {
             return;
+        }
+        if (!systemInvoke) {
+            server.originalCommandUsage().merge(command, 1, Integer::sum);
         }
         Map<Command.CommandIdentifier, Command.CommandIdentity> commandMap = server.commands().get(command);
         Command.CommandIdentifier identifier = new Command.CommandIdentifier(
@@ -174,56 +182,12 @@ public class UserImpl extends Thread implements User {
         send(Message.RPL_YOURHOST.parameters(userInfo, Constant.NAME, Constant.VERSION));
         send(Message.RPL_CREATED.parameters(userInfo, server.createdAt(), server.createdAt()));
         send(Message.RPL_MYINFO.parameters(userInfo, Constant.NAME, Constant.VERSION, "", ""));
-        List<Map<String, Object>> tokens = server.supportAttribute()
-                                                 .asMapsWithLimit(13,
-                                                                  (key, value) -> {
-                                                                      if (value == null) {
-                                                                          return false;
-                                                                      }
-                                                                      if (value instanceof Boolean) {
-                                                                          return (boolean) value;
-                                                                      }
-                                                                      if (value instanceof Character) {
-                                                                          return (char) value != '\u0000';
-                                                                      }
-                                                                      return true;
-                                                                  });
-        for (Map<String, Object> token : tokens) {
-            StringBuilder builder = new StringBuilder();
-            if (token.isEmpty()) {
-                continue;
-            }
-            token.forEach((s, o) -> builder.append(s.toUpperCase(Locale.ROOT))
-                                           .append(parseOptional(o))
-                                           .append(" "));
-            send(Message.RPL_ISUPPORT.parameters(userInfo, builder.deleteCharAt(builder.length() - 1)));
+        VersionCommand.send_ISUPPORT(this);
+        try {
+            process("MOTD");
+        } catch (InvocationTargetException | IllegalAccessException e) {
+            e.printStackTrace();
         }
-        if (server.settings().motd.length != 0) {
-            send(Message.RPL_MOTDSTART.parameters(info.format(), server.settings().host));
-            for (String s : server.settings().motd) {
-                send(Message.RPL_MOTD.parameters(info.format(), s));
-            }
-            send(Message.RPL_ENDOFMOTD.parameters(info.format()));
-        } else {
-            send(Message.ERR_NOMOTD.parameters(info.format()));
-        }
-    }
-
-    private String parseOptional(Object potentialOptional) {
-        if (potentialOptional instanceof Optional) {
-            return parseOptional_((Optional<?>) potentialOptional);
-        } else if (potentialOptional instanceof OptionalInt) {
-            return parseOptional_((OptionalInt) potentialOptional);
-        }
-        return "=" + potentialOptional;
-    }
-
-    private String parseOptional_(@SuppressWarnings("OptionalUsedAsFieldOrParameterType") Optional<?> optional) {
-        return optional.map(o -> "=" + o).orElse("");
-    }
-
-    private String parseOptional_(@SuppressWarnings("OptionalUsedAsFieldOrParameterType") OptionalInt optional) {
-        return (optional.isPresent() ? "=" + optional.getAsInt() : "");
     }
 
     public void setState(UserState state) {

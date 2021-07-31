@@ -11,6 +11,7 @@ public class ChannelImpl implements Channel {
     private final List<User>        bans;
     private final List<User>        users;
     private final Map<User, String> prefix;
+    private final long              createdAt;
     private       String            password;
     private       Channel.Topic     topic;
 
@@ -23,16 +24,28 @@ public class ChannelImpl implements Channel {
     }
 
     public ChannelImpl(User creator, String name, Topic topic) {
-        this(creator, name, topic, new Modes(null, 0, false, false));
+        this(creator, name, topic, new Modes(
+                new ArrayList<>(),
+                new ArrayList<>(),
+                new ArrayList<>(),
+                null,
+                0,
+                false,
+                false,
+                false,
+                false,
+                false
+        ));
     }
 
     public ChannelImpl(User creator, String name, Topic topic, Modes modes) {
-        this(creator, name, topic, modes, new ArrayList<>(), new ArrayList<>(), new HashMap<>());
+        this(creator, name, topic, modes, new ArrayList<>(), new ArrayList<>(), new HashMap<>(),
+             System.currentTimeMillis() / 1000);
     }
 
     public ChannelImpl(
             User creator, String name, Channel.Topic topic, Modes modes, List<User> bans, List<User> users,
-            Map<User, String> prefix
+            Map<User, String> prefix, long createdAt
     ) {
         this.name   = name;
         this.topic  = topic;
@@ -41,6 +54,7 @@ public class ChannelImpl implements Channel {
         this.users  = users;
         this.prefix = prefix;
         this.prefix.put(creator, "%");
+        this.createdAt = createdAt;
     }
 
     @Override
@@ -65,17 +79,13 @@ public class ChannelImpl implements Channel {
     }
 
     @Override
-    public List<User> bans() {
-        return Collections.unmodifiableList(bans);
-    }
-
-    public List<User> modifiableBans() {
-        return bans;
+    public List<User> users() {
+        return Collections.unmodifiableList(users);
     }
 
     @Override
-    public List<User> users() {
-        return Collections.unmodifiableList(users);
+    public long createAt() {
+        return createdAt;
     }
 
     public List<User> modifiableUsers() {
@@ -100,21 +110,35 @@ public class ChannelImpl implements Channel {
     }
 
     public static final class Modes {
-        private String  password;
-        private int     limit;
-        private boolean inviteOnly;
-        private boolean secret;
+        private final List<String> except;
+        private final List<String> bans;
+        private final List<String> invEx;
+        private       String       password;
+        private       int          limit;
+        private       boolean      moderate;
+        private       boolean      inviteOnly;
+        private       boolean      secret;
+        private       boolean      _protected;
+        private       boolean      noExternalMessage;
 
         public Modes(
-                String password,
-                int limit,
+                List<String> except, List<String> bans, List<String> invEx, String password, int limit,
+                boolean moderate,
                 boolean inviteOnly,
-                boolean secret
+                boolean secret,
+                boolean _protected,
+                boolean noExternalMessage
         ) {
-            this.password   = password;
-            this.limit      = limit;
-            this.inviteOnly = inviteOnly;
-            this.secret     = secret;
+            this.except            = except;
+            this.bans              = bans;
+            this.invEx             = invEx;
+            this.password          = password;
+            this.limit             = limit;
+            this.moderate          = moderate;
+            this.inviteOnly        = inviteOnly;
+            this.secret            = secret;
+            this._protected        = _protected;
+            this.noExternalMessage = noExternalMessage;
         }
 
         public Optional<String> password() {
@@ -147,6 +171,64 @@ public class ChannelImpl implements Channel {
 
         public void secret(boolean secret) {
             this.secret = secret;
+        }
+
+        public List<String> bans() {
+            return bans;
+        }
+
+        public boolean moderate() {
+            return moderate;
+        }
+
+        public Modes moderate(boolean moderate) {
+            this.moderate = moderate;
+            return this;
+        }
+
+        public boolean _protected() {
+            return _protected;
+        }
+
+        public Modes _protected(boolean _protected) {
+            this._protected = _protected;
+            return this;
+        }
+
+        public boolean noExternalMessage() {
+            return noExternalMessage;
+        }
+
+        public Modes noExternalMessage(boolean noExternalMessage) {
+            this.noExternalMessage = noExternalMessage;
+            return this;
+        }
+
+        public List<String> except() {
+            return except;
+        }
+
+        public List<String> invEx() {
+            return invEx;
+        }
+
+        public String modesString() {
+            return
+                    (!bans().isEmpty() ? "b" : "") +
+                    (!except().isEmpty() ? "e" : "") +
+                    (inviteOnly() ? "i" : "") +
+                    (!invEx().isEmpty() ? "I" : "") +
+                    (moderate() ? "m" : "") +
+                    (_protected() ? "t" : "") +
+                    (noExternalMessage() ? "n" : "") +
+                    (secret() ? "s" : "") +
+                    (limit().isPresent() ? "l" : "") +
+                    (password().isPresent() ? "k" : "");
+        }
+
+        public String modesArguments() {
+            return (limit().isPresent() ? limit().getAsInt() + " " : "") +
+                   (password().isPresent() ? password().get() : "");
         }
     }
 }

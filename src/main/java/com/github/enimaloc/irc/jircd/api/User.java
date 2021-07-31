@@ -94,6 +94,10 @@ public interface User {
             return (hasString(nickname) ? nickname : "@" + host);
         }
 
+        public String full() {
+            return nickname + "!" + username + "@" + host;
+        }
+
         private boolean hasString(String s) {
             return s != null && !s.isEmpty() && !s.isBlank();
         }
@@ -178,6 +182,14 @@ public interface User {
                    ", localOper=" + localOper +
                    ", wallops=" + wallops +
                    '}';
+        }
+
+        public String modes() {
+            return (invisible() ? "i" : "") +
+                   (oper() ? "o" : "") +
+                   (localOper() ? "O" : "") +
+//                   (registered() ? "r" : "")+
+                   (wallops() ? "w" : "");
         }
 
         public String prefix() {

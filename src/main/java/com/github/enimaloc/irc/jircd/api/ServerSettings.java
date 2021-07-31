@@ -17,6 +17,7 @@ public class ServerSettings {
     public        String         pass        = "hello";
     public        String         host;
     public        String         networkName = "enimaloc's";
+    public        Admin          admin       = new Admin("", "", "");
     public        List<Operator> operators   = new ArrayList<>(
             Collections.singletonList(new Operator("oper", "operPass")));
     private final String[]       defaultMotd = new String[]{
@@ -112,6 +113,30 @@ public class ServerSettings {
 
         public String password() {
             return password;
+        }
+    }
+
+    public class Admin {
+        private final String loc1;
+        private final String loc2;
+        private final String email;
+
+        public Admin(String loc1, String loc2, String email) {
+            this.loc1  = loc1;
+            this.loc2  = loc2;
+            this.email = email;
+        }
+
+        public String loc1() {
+            return loc1;
+        }
+
+        public String loc2() {
+            return loc2;
+        }
+
+        public String email() {
+            return email;
         }
     }
 }

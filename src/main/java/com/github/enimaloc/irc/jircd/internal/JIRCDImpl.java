@@ -1,5 +1,6 @@
 package com.github.enimaloc.irc.jircd.internal;
 
+import com.github.enimaloc.irc.jircd.Constant;
 import com.github.enimaloc.irc.jircd.api.Channel;
 import com.github.enimaloc.irc.jircd.api.JIRCD;
 import com.github.enimaloc.irc.jircd.api.ServerSettings;
@@ -7,6 +8,7 @@ import com.github.enimaloc.irc.jircd.api.User;
 import com.github.enimaloc.irc.jircd.internal.commands.Command;
 import com.github.enimaloc.irc.jircd.internal.commands.channel.*;
 import com.github.enimaloc.irc.jircd.internal.commands.connection.*;
+import com.github.enimaloc.irc.jircd.internal.commands.server.*;
 import java.io.IOException;
 import java.lang.reflect.Method;
 import java.net.ServerSocket;
@@ -15,7 +17,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class JIRCDImpl extends Thread implements JIRCD {
-    private final Map<String, Map<Command.CommandIdentifier, Command.CommandIdentity>> commands = new HashMap<>();
+    private final Map<String, Map<Command.CommandIdentifier, Command.CommandIdentity>> commands     = new HashMap<>();
+    private final Map<String, Integer>                                                 commandUsage = new HashMap<>();
 
     private final ServerSocket     serverSocket;
     private final List<UserImpl>   users      = new ArrayList<>();
@@ -42,9 +45,18 @@ public class JIRCDImpl extends Thread implements JIRCD {
                 new PartCommand(),
                 new TopicCommand(),
                 new NamesCommand(),
-                new ListCommand()
-        )) {
+                new ListCommand(),
 
+                // Server Queries and Commands
+                new MotdCommand(),
+                new VersionCommand(),
+                new AdminCommand(),
+                new ConnectCommand(),
+                new TimeCommand(),
+                new StatsCommand(),
+                new InfoCommand(),
+                new ModeCommand()
+        )) {
             Class<?> clazz         = cmd.getClass();
             String   nameByAClazz  = "__DEFAULT__";
             boolean  clazzTrailing = false;
@@ -72,6 +84,7 @@ public class JIRCDImpl extends Thread implements JIRCD {
                                     method.getParameterCount() - (asTrailing ? 2 : 1), asTrailing),
                             new Command.CommandIdentity(cmd, method));
                     commands.put(nameByAMethod.toUpperCase(), map);
+                    commandUsage.put(nameByAMethod.toUpperCase(), 0);
                 }
             }
         }
@@ -171,8 +184,27 @@ public class JIRCDImpl extends Thread implements JIRCD {
         return commands;
     }
 
+    @Override
+    public Map<String, Integer> commandUsage() {
+        return Collections.unmodifiableMap(commandUsage);
+    }
+
+    public Map<String, Integer> originalCommandUsage() {
+        return commandUsage;
+    }
+
+    @Override
     public Date createdAt() {
         return createdAt;
+    }
+
+    @Override
+    public String[] infos() {
+        return new String[]{
+                Constant.NAME + " v" + Constant.VERSION,
+                "by Antoine <antoine@enimaloc.fr>",
+                "Source code: " + Constant.GITHUB
+        };
     }
 
     @Override

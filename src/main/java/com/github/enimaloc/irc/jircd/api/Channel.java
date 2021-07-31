@@ -20,9 +20,9 @@ public interface Channel {
 
     ChannelImpl.Modes modes();
 
-    List<User> bans();
-
     List<User> users();
+
+    long createAt();
 
     record Topic(String topic, User user, long unixTimestamp) {
         public static final Topic EMPTY = new Topic(null, null, -1L);

@@ -1,6 +1,7 @@
 package com.github.enimaloc.irc.jircd.internal.commands.channel;
 
 import com.github.enimaloc.irc.jircd.api.Channel;
+import com.github.enimaloc.irc.jircd.api.Mask;
 import com.github.enimaloc.irc.jircd.api.Message;
 import com.github.enimaloc.irc.jircd.api.User;
 import com.github.enimaloc.irc.jircd.internal.ChannelImpl;
@@ -68,7 +69,14 @@ public class JoinCommand {
                 user.send(Message.ERR_BADCHANNELKEY.parameters(user.info().format(), channel));
                 continue;
             }
-            if (channelObj.bans().contains(user)) {
+            if (channelObj.modes()
+                          .bans()
+                          .stream()
+                          .anyMatch(mask -> new Mask(mask).toPattern().matcher(user.info().full()).matches()) &&
+                channelObj.modes()
+                          .except()
+                          .stream()
+                          .noneMatch(mask -> new Mask(mask).toPattern().matcher(user.info().full()).matches())) {
                 user.send(Message.ERR_BANNEDFROMCHAN.parameters(user.info().format(), channel));
                 continue;
             }
