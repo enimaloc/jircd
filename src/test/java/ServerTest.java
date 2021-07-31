@@ -1318,7 +1318,7 @@ class ServerTest {
                             ":bob PART #g",
                             ":bob PART #h",
                     }, connections[0].awaitMessage(8));
-                    assertTrue(server.channels().isEmpty());
+                    assertTrue(waitFor(() -> server.channels().isEmpty()));
                 }
             }
 
@@ -1881,7 +1881,7 @@ class ServerTest {
                             String key = attribute.contains("=") ?
                                     attribute.split("=")[0] :
                                     attribute;
-                            String              value         = attribute.contains("=") ?
+                            String value = attribute.contains("=") ?
                                     attribute.split("=")[1] :
                                     null;
                             Map<String, Object> map           = attr.asMap((s, o) -> s.equalsIgnoreCase(key));
