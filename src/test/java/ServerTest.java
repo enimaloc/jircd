@@ -4,6 +4,7 @@ import com.github.enimaloc.irc.jircd.api.JIRCD;
 import com.github.enimaloc.irc.jircd.api.ServerSettings;
 import com.github.enimaloc.irc.jircd.api.User;
 import com.github.enimaloc.irc.jircd.internal.*;
+import com.github.enimaloc.utils.NumberUtils;
 import java.io.*;
 import java.lang.reflect.ParameterizedType;
 import java.net.BindException;
@@ -28,9 +29,11 @@ import static org.junit.jupiter.api.Assumptions.assumeFalse;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 class ServerTest {
-    public static final String ENDING                         = "\r\n";
-    public static final long   TIME_OUT_BETWEEN_COMMUNICATION = 100;
-    public static final int    TIME_OUT_WHEN_WAITING_RESPONSE = 100;
+    public static final String ENDING                        = "\r\n";
+    public static final long   TIMEOUT_BETWEEN_COMMUNICATION = NumberUtils.getSafe(
+            System.getenv("TIMEOUT_BETWEEN_COMMUNICATION"), Long.class).orElse(1000L);
+    public static final int    TIMEOUT_WHEN_WAITING_RESPONSE = NumberUtils.getSafe(
+            System.getenv("TIMEOUT_WHEN_WAITING_RESPONSE"), Integer.class).orElse(1000);
 
     public static final String[] EMPTY_ARRAY  = new String[0];
     public static final String[] SOCKET_CLOSE = new String[]{null};
@@ -102,7 +105,7 @@ class ServerTest {
 
         Connection createConnection() throws IOException {
             Socket client = new Socket("127.0.0.1", baseSettings.port);
-            client.setSoTimeout(TIME_OUT_WHEN_WAITING_RESPONSE);
+            client.setSoTimeout(TIMEOUT_WHEN_WAITING_RESPONSE);
             BufferedReader input = new BufferedReader(
                     new InputStreamReader(client.getInputStream(), StandardCharsets.ISO_8859_1));
             PrintStream output = new PrintStream(client.getOutputStream());
@@ -709,10 +712,10 @@ class ServerTest {
                 @Test
                 void nickTest() throws InterruptedException {
                     connections[0].send("PASS " + baseSettings.pass);
-                    Thread.sleep(TIME_OUT_BETWEEN_COMMUNICATION);
+                    Thread.sleep(TIMEOUT_BETWEEN_COMMUNICATION);
 
                     connections[0].send("NICK bob");
-                    Thread.sleep(TIME_OUT_BETWEEN_COMMUNICATION);
+                    Thread.sleep(TIMEOUT_BETWEEN_COMMUNICATION);
                     UserImpl.Info info = server.users().get(0).info();
                     assertTrue(info.passwordValid());
                     assertEquals("bob", info.nickname());
@@ -822,24 +825,24 @@ class ServerTest {
             class QuitCommand {
                 @Test
                 void quitTest() throws InterruptedException {
-                    Thread.sleep(TIME_OUT_BETWEEN_COMMUNICATION);
+                    Thread.sleep(TIMEOUT_BETWEEN_COMMUNICATION);
                     assumeTrue(waitFor(() -> server.users().size() == 1));
                     User user = server.users().get(0);
                     connections[0].send("QUIT");
 
-                    Thread.sleep(TIME_OUT_BETWEEN_COMMUNICATION);
+                    Thread.sleep(TIMEOUT_BETWEEN_COMMUNICATION);
                     assertTrue(server.users().isEmpty());
                     assertEquals(UserState.DISCONNECTED, user.state());
                 }
 
                 @Test
                 void quitWithReasonTest() throws InterruptedException {
-                    Thread.sleep(TIME_OUT_BETWEEN_COMMUNICATION);
+                    Thread.sleep(TIMEOUT_BETWEEN_COMMUNICATION);
                     assumeTrue(waitFor(() -> server.users().size() == 1));
                     User user = server.users().get(0);
                     connections[0].send("QUIT :Bye");
 
-                    Thread.sleep(TIME_OUT_BETWEEN_COMMUNICATION);
+                    Thread.sleep(TIMEOUT_BETWEEN_COMMUNICATION);
                     assertTrue(server.users().isEmpty());
                     assertEquals(UserState.DISCONNECTED, user.state());
                 }
