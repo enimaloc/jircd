@@ -31,9 +31,9 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
 class ServerTest {
     public static final String ENDING                        = "\r\n";
     public static final long   TIMEOUT_BETWEEN_COMMUNICATION = NumberUtils.getSafe(
-            System.getenv("TIMEOUT_BETWEEN_COMMUNICATION"), Long.class).orElse(1000L);
+            System.getenv("TIMEOUT_BETWEEN_COMMUNICATION"), Long.class).orElse(10000L);
     public static final int    TIMEOUT_WHEN_WAITING_RESPONSE = NumberUtils.getSafe(
-            System.getenv("TIMEOUT_WHEN_WAITING_RESPONSE"), Integer.class).orElse(1000);
+            System.getenv("TIMEOUT_WHEN_WAITING_RESPONSE"), Integer.class).orElse(10000);
 
     public static final String[] EMPTY_ARRAY  = new String[0];
     public static final String[] SOCKET_CLOSE = new String[]{null};
