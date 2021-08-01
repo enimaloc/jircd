@@ -70,6 +70,8 @@ public class Message {
     public static final Message ERR_INVITEONLYCHAN    = new Message(":%s 473 %s %s :Cannot join channel (+i)");
     public static final Message ERR_BANNEDFROMCHAN    = new Message(":%s 474 %s %s :Cannot join channel (+b)");
     public static final Message ERR_BADCHANNELKEY     = new Message(":%s 475 %s %s :Cannot join channel (+k)");
+    public static final Message ERR_NOPRIVILEGES      = new Message(
+            ":%s 481 %s :Permission Denied- You're not an IRC operator");
     public static final Message ERR_CHANOPRIVSNEEDED  = new Message(":%s 482 %s %s :You're not channel operator");
     public static final Message ERR_UMODEUNKNOWNFLAG  = new Message(":%s 501 %s :Unknown MODE flag");
     public static final Message ERR_USERSDONTMATCH    = new Message(":%s 502 %s :Cant change mode for other users");

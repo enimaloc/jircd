@@ -10,6 +10,7 @@ import com.github.enimaloc.irc.jircd.internal.commands.channel.*;
 import com.github.enimaloc.irc.jircd.internal.commands.connection.*;
 import com.github.enimaloc.irc.jircd.internal.commands.messages.NoticeCommand;
 import com.github.enimaloc.irc.jircd.internal.commands.messages.PrivmsgCommand;
+import com.github.enimaloc.irc.jircd.internal.commands.miscellaneous.KillCommand;
 import com.github.enimaloc.irc.jircd.internal.commands.optional.UserhostCommand;
 import com.github.enimaloc.irc.jircd.internal.commands.server.*;
 import java.io.IOException;
@@ -65,7 +66,10 @@ public class JIRCDImpl extends Thread implements JIRCD {
                 new NoticeCommand(),
 
                 // Optional Message
-                new UserhostCommand()
+                new UserhostCommand(),
+
+                // Miscellaneous Messages
+                new KillCommand()
         )) {
             Class<?> clazz         = cmd.getClass();
             String   nameByAClazz  = "__DEFAULT__";
