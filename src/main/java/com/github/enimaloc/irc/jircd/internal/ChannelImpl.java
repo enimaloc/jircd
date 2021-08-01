@@ -4,6 +4,7 @@ import com.github.enimaloc.irc.jircd.api.Channel;
 import com.github.enimaloc.irc.jircd.api.Message;
 import com.github.enimaloc.irc.jircd.api.User;
 import java.util.*;
+import java.util.function.Predicate;
 
 public class ChannelImpl implements Channel {
     private final String            name;
@@ -53,7 +54,7 @@ public class ChannelImpl implements Channel {
         this.bans   = bans;
         this.users  = users;
         this.prefix = prefix;
-        this.prefix.put(creator, "%");
+        this.prefix.put(creator, "~");
         this.createdAt = createdAt;
     }
 
@@ -97,16 +98,30 @@ public class ChannelImpl implements Channel {
         return (prefix.get(user) != null ? prefix.get(user) : "") + user.modes().prefix();
     }
 
+    public void prefix(User user, String prefix) {
+        this.prefix.put(user, prefix);
+    }
+
     @Override
     public void broadcast(String source, Message message) {
-        broadcast(message.format(source));
+        broadcast(source, message, user -> true);
+    }
+
+    @Override
+    public void broadcast(String source, Message message, Predicate<User> filter) {
+        broadcast(message.format(source), filter);
     }
 
     @Override
     public void broadcast(String message) {
-        for (User user : users) {
-            user.send(message);
-        }
+        broadcast(message, user -> true);
+    }
+
+    @Override
+    public void broadcast(String message, Predicate<User> filter) {
+        new ArrayList<>(users).stream()
+                              .filter(filter)
+                              .forEach(user -> user.send(message));
     }
 
     public static final class Modes {

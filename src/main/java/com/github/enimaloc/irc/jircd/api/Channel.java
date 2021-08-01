@@ -3,6 +3,7 @@ package com.github.enimaloc.irc.jircd.api;
 import com.github.enimaloc.irc.jircd.internal.ChannelImpl;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.Predicate;
 
 public interface Channel {
 
@@ -10,7 +11,11 @@ public interface Channel {
 
     void broadcast(String from, Message message);
 
+    void broadcast(String source, Message message, Predicate<User> filter);
+
     void broadcast(String message);
+
+    void broadcast(String message, Predicate<User> filter);
 
     String name();
 

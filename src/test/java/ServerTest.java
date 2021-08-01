@@ -152,7 +152,7 @@ class ServerTest {
         }
 
         public Optional<Channel> getChannel(String name) {
-            return server.channels().stream().filter(c -> c.name().equals(name)).findFirst();
+            return new ArrayList<>(server.channels()).stream().filter(c -> c.name().equals(name)).findFirst();
         }
 
         @BeforeEach
@@ -270,7 +270,7 @@ class ServerTest {
             connections[0].send("JOIN #bob-sunhat");
             assertArrayEquals(new String[]{
                     ":bob JOIN #bob-sunhat",
-                    ":jircd-host 353 bob = #bob-sunhat :%bob",
+                    ":jircd-host 353 bob = #bob-sunhat :~bob",
                     ":jircd-host 366 bob #bob-sunhat :End of /NAMES list"
             }, connections[0].awaitMessage(3));
             Optional<Channel> bobSunhatOpt = getChannel("#bob-sunhat");
@@ -294,7 +294,7 @@ class ServerTest {
             assertArrayEquals(new String[]{
                     ":john JOIN #bob-sunhat",
                     ":jircd-host 332 john #bob-sunhat :We talk about bob sunhat",
-                    ":jircd-host 353 john = #bob-sunhat :%bob john",
+                    ":jircd-host 353 john = #bob-sunhat :~bob john",
                     ":jircd-host 366 john #bob-sunhat :End of /NAMES list"
             }, connections[1].awaitMessage(5));
             assertArrayEquals(new String[]{
@@ -304,7 +304,7 @@ class ServerTest {
             connections[1].send("JOIN #joker");
             assertArrayEquals(new String[]{
                     ":john JOIN #joker",
-                    ":jircd-host 353 john = #joker :%john",
+                    ":jircd-host 353 john = #joker :~john",
                     ":jircd-host 366 john #joker :End of /NAMES list"
             }, connections[1].awaitMessage(3));
             Optional<Channel> jokerOpt = getChannel("#joker");
@@ -323,10 +323,10 @@ class ServerTest {
             assertArrayEquals(new String[]{
                     ":fred JOIN #bob-sunhat",
                     ":jircd-host 332 fred #bob-sunhat :We talk about bob sunhat",
-                    ":jircd-host 353 fred = #bob-sunhat :%bob john fred",
+                    ":jircd-host 353 fred = #bob-sunhat :~bob john fred",
                     ":jircd-host 366 fred #bob-sunhat :End of /NAMES list",
                     ":fred JOIN #joker",
-                    ":jircd-host 353 fred = #joker :%john fred",
+                    ":jircd-host 353 fred = #joker :~john fred",
                     ":jircd-host 366 fred #joker :End of /NAMES list"
             }, connections[2].awaitMessage(7));
             assertArrayEquals(new String[]{
@@ -336,6 +336,25 @@ class ServerTest {
                     ":fred JOIN #bob-sunhat",
                     ":fred JOIN #joker"
             }, connections[1].awaitMessage(2));
+
+            connections[0].send("PRIVMSG #bob-sunhat :Here you can buy a bob sunhat: " +
+                                "https://www.amazon.fr/Bob-Game-Color-Pikachu-Lorenzo/dp/B077MMR9CN");
+            assertArrayEquals(EMPTY_ARRAY, connections[0].awaitMessage());
+            assertArrayEquals(new String[]{
+                    ":bob PRIVMSG #bob-sunhat :Here you can buy a bob sunhat: " +
+                    "https://www.amazon.fr/Bob-Game-Color-Pikachu-Lorenzo/dp/B077MMR9CN"
+            }, connections[1].awaitMessage());
+            assertArrayEquals(new String[]{
+                    ":bob PRIVMSG #bob-sunhat :Here you can buy a bob sunhat: " +
+                    "https://www.amazon.fr/Bob-Game-Color-Pikachu-Lorenzo/dp/B077MMR9CN"
+            }, connections[2].awaitMessage());
+
+            connections[1].send("PRIVMSG #joker :Let me go out!");
+            assertArrayEquals(EMPTY_ARRAY, connections[1].awaitMessage());
+            assertArrayEquals(EMPTY_ARRAY, connections[0].awaitMessage());
+            assertArrayEquals(new String[]{
+                    ":john PRIVMSG #joker :Let me go out!"
+            }, connections[2].awaitMessage());
 
             connections[1].send("PART #bob-sunhat");
             assertArrayEquals(new String[]{
@@ -869,7 +888,7 @@ class ServerTest {
                 connections[0].send("JOIN #jircd");
                 assertArrayEquals(new String[]{
                         ":bob JOIN #jircd",
-                        ":jircd-host 353 bob = #jircd :%bob",
+                        ":jircd-host 353 bob = #jircd :~bob",
                         ":jircd-host 366 bob #jircd :End of /NAMES list"
                 }, connections[0].awaitMessage(3));
                 assertFalse(server.channels().isEmpty());
@@ -887,7 +906,7 @@ class ServerTest {
 
                 connections[0].send("NAMES #jircd");
                 assertArrayEquals(new String[]{
-                        ":jircd-host 353 bob = #jircd :%bob",
+                        ":jircd-host 353 bob = #jircd :~bob",
                         ":jircd-host 366 bob #jircd :End of /NAMES list"
                 }, connections[0].awaitMessage(2));
 
@@ -914,7 +933,7 @@ class ServerTest {
 
                     assertArrayEquals(new String[]{
                             ":bob JOIN #jircd",
-                            ":jircd-host 353 bob = #jircd :%bob",
+                            ":jircd-host 353 bob = #jircd :~bob",
                             ":jircd-host 366 bob #jircd :End of /NAMES list"
                     }, connections[0].awaitMessage(3));
 
@@ -940,7 +959,7 @@ class ServerTest {
                     assertArrayEquals(new String[]{
                             ":john JOIN #jircd",
                             ":jircd-host 332 john #jircd :Example topic",
-                            ":jircd-host 353 john = #jircd :%bob john",
+                            ":jircd-host 353 john = #jircd :~bob john",
                             ":jircd-host 366 john #jircd :End of /NAMES list"
                     }, connections[1].awaitMessage(4));
                     assertEquals(2, channel.users().size());
@@ -962,7 +981,7 @@ class ServerTest {
                     connections[1].send("JOIN #jircd");
                     assertArrayEquals(new String[]{
                             ":john JOIN #jircd",
-                            ":jircd-host 353 john @ #jircd :%bob john",
+                            ":jircd-host 353 john @ #jircd :~bob john",
                             ":jircd-host 366 john #jircd :End of /NAMES list"
                     }, connections[1].awaitMessage(4));
                     assertEquals(2, channel.users().size());
@@ -984,7 +1003,7 @@ class ServerTest {
                     connections[1].send("JOIN #jircd " + channel.modes().password().get());
                     assertArrayEquals(new String[]{
                             ":john JOIN #jircd",
-                            ":jircd-host 353 john = #jircd :%bob john",
+                            ":jircd-host 353 john = #jircd :~bob john",
                             ":jircd-host 366 john #jircd :End of /NAMES list"
                     }, connections[1].awaitMessage(4));
                     assertEquals(2, channel.users().size());
@@ -1009,7 +1028,7 @@ class ServerTest {
                         channelsNameList.append(channel.name()).append(",");
                         expectedOutput.add(":john JOIN %s".formatted(channel.name()));
                         expectedOutput.add(
-                                ":jircd-host 353 john = %s :%%bob john".formatted(channel.name()));
+                                ":jircd-host 353 john = %s :~bob john".formatted(channel.name()));
                         expectedOutput.add(":jircd-host 366 john %s :End of /NAMES list".formatted(channel.name()));
                         j += 3;
                     }
@@ -1042,7 +1061,7 @@ class ServerTest {
                         passwdList.append("thinking,");
                         expectedOutput.add(":john JOIN %s".formatted(channel.name()));
                         expectedOutput.add(
-                                ":jircd-host 353 john = %s :%%bob john".formatted(channel.name()));
+                                ":jircd-host 353 john = %s :~bob john".formatted(channel.name()));
                         expectedOutput.add(":jircd-host 366 john %s :End of /NAMES list".formatted(channel.name()));
                         j += 3;
                     }
@@ -1076,7 +1095,7 @@ class ServerTest {
                         expectedOutput[j++] = ":john JOIN %s".formatted(channel.name());
                         expectedOutput[j++] = ":jircd-host 332 john %s :This is a sample topic".formatted(
                                 channel.name());
-                        expectedOutput[j++] = ":jircd-host 353 john = %s :%%bob john".formatted(channel.name());
+                        expectedOutput[j++] = ":jircd-host 353 john = %s :~bob john".formatted(channel.name());
                         expectedOutput[j++] = ":jircd-host 366 john %s :End of /NAMES list".formatted(channel.name());
                     }
 
@@ -1106,7 +1125,7 @@ class ServerTest {
                         channelsNameList.append(channel.name()).append(",");
                         expectedOutput.add(":john JOIN %s".formatted(channel.name()));
                         expectedOutput.add(
-                                ":jircd-host 353 john @ %s :%%bob john".formatted(channel.name()));
+                                ":jircd-host 353 john @ %s :~bob john".formatted(channel.name()));
                         expectedOutput.add(":jircd-host 366 john %s :End of /NAMES list".formatted(channel.name()));
                         j += 3;
                     }
@@ -1154,7 +1173,7 @@ class ServerTest {
                                                                                        topicOpt.get().topic()));
                             j++;
                         }
-                        expectedOutput.add(":jircd-host 353 john %s %s :%%bob john".formatted(
+                        expectedOutput.add(":jircd-host 353 john %s %s :~bob john".formatted(
                                 channel.modes().secret() ? "@" : "=",
                                 channel.name()
                         ));
@@ -1252,7 +1271,7 @@ class ServerTest {
                     connections[1].send("JOIN #jircd");
                     assertArrayEquals(new String[]{
                             ":john JOIN #jircd",
-                            ":jircd-host 353 john = #jircd :%bob john",
+                            ":jircd-host 353 john = #jircd :~bob john",
                             ":jircd-host 366 john #jircd :End of /NAMES list"
                     }, connections[1].awaitMessage(3));
                     assertEquals(2, channel.users().size());
@@ -1557,7 +1576,7 @@ class ServerTest {
                     connections[1].createUser("john", "John Doe");
                     connections[1].send("NAMES #names");
                     assertArrayEquals(new String[]{
-                            ":jircd-host 353 john = #names :%bob",
+                            ":jircd-host 353 john = #names :~bob",
                             ":jircd-host 366 john #names :End of /NAMES list"
                     }, connections[1].awaitMessage(2));
                 }
@@ -1575,9 +1594,9 @@ class ServerTest {
                     connections[2].createUser("fred", "Fred Bloggs");
                     connections[2].send("NAMES");
                     assertArrayEquals(new String[]{
-                            ":jircd-host 353 fred = #names :%bob john",
+                            ":jircd-host 353 fred = #names :~bob john",
                             ":jircd-host 366 fred #names :End of /NAMES list",
-                            ":jircd-host 353 fred = #joker :%john",
+                            ":jircd-host 353 fred = #joker :~john",
                             ":jircd-host 366 fred #joker :End of /NAMES list"
                     }, connections[2].awaitMessage(4));
                 }
@@ -1614,7 +1633,7 @@ class ServerTest {
                     connections[1].ignoreMessage(4);
                     connections[1].send("NAMES #names");
                     assertArrayEquals(new String[]{
-                            ":jircd-host 353 john @ #names :%bob john",
+                            ":jircd-host 353 john @ #names :~bob john",
                             ":jircd-host 366 john #names :End of /NAMES list"
                     }, connections[1].awaitMessage(2));
                 }
@@ -1650,7 +1669,7 @@ class ServerTest {
                     connections[1].ignoreMessage(4);
                     connections[1].send("NAMES #names");
                     assertArrayEquals(new String[]{
-                            ":jircd-host 353 john = #names :%bob john",
+                            ":jircd-host 353 john = #names :~bob john",
                             ":jircd-host 366 john #names :End of /NAMES list"
                     }, connections[1].awaitMessage(2));
                 }
@@ -2069,26 +2088,28 @@ class ServerTest {
                 void statsMTest() {
                     connections[0].send("STATS m");
                     assertArrayEquals(new String[]{
+                            ":jircd-host 212 ADMIN 0",
+                            ":jircd-host 212 CONNECT 0",
+                            ":jircd-host 212 INFO 0",
+                            ":jircd-host 212 JOIN 0",
+                            ":jircd-host 212 LIST 0",
+                            ":jircd-host 212 MODE 0",
+                            ":jircd-host 212 MOTD 0",
                             ":jircd-host 212 NAMES 0",
                             ":jircd-host 212 NICK 1",
-                            ":jircd-host 212 STATS 1",
-                            ":jircd-host 212 MODE 0",
-                            ":jircd-host 212 JOIN 0",
-                            ":jircd-host 212 QUIT 0",
-                            ":jircd-host 212 CONNECT 0",
-                            ":jircd-host 212 TIME 0",
+                            ":jircd-host 212 NOTICE 0",
                             ":jircd-host 212 OPER 0",
+                            ":jircd-host 212 PART 0",
+                            ":jircd-host 212 PASS 1",
+                            ":jircd-host 212 PRIVMSG 0",
+                            ":jircd-host 212 QUIT 0",
+                            ":jircd-host 212 STATS 1",
+                            ":jircd-host 212 TIME 0",
                             ":jircd-host 212 TOPIC 0",
                             ":jircd-host 212 USER 1",
-                            ":jircd-host 212 INFO 0",
-                            ":jircd-host 212 PASS 1",
-                            ":jircd-host 212 PART 0",
-                            ":jircd-host 212 MOTD 0",
                             ":jircd-host 212 VERSION 0",
-                            ":jircd-host 212 ADMIN 0",
-                            ":jircd-host 212 LIST 0",
                             ":jircd-host 219 M :End of /STATS report"
-                    }, connections[0].awaitMessage(19));
+                    }, connections[0].awaitMessage(21));
                 }
 
                 @Test
@@ -2541,6 +2562,251 @@ class ServerTest {
                             assertTrue(channel.modes().modesString().isEmpty());
                         }
                     }
+                }
+            }
+        }
+
+        @Nested
+        class SendingMessage {
+
+            @BeforeEach
+            void setUp() {
+                connections[0].createUser("bob", "bobby", "Mobbye Plav");
+                addConnections(1);
+                connections[1].createUser("john", "John Doe");
+            }
+
+            @Nested
+            class PrivmsgCommand {
+
+                @Nested
+                class UserToUserTest {
+                    @Test
+                    void privmsgTest() {
+                        connections[0].send("PRIVMSG john :Hey!");
+                        assertArrayEquals(EMPTY_ARRAY, connections[0].awaitMessage());
+                        assertArrayEquals(new String[]{
+                                ":bob PRIVMSG john :Hey!"
+                        }, connections[1].awaitMessage());
+                    }
+
+                    @Test
+                    void privmsgAwayUserTest() {
+                        ((UserImpl) server.users().get(1)).away("I'm not here for now");
+                        connections[0].send("PRIVMSG john :Hey!");
+                        assertArrayEquals(new String[]{
+                                ":jircd-host 301 bob john :I'm not here for now"
+                        }, connections[0].awaitMessage());
+                        assertArrayEquals(new String[]{
+                                ":bob PRIVMSG john :Hey!"
+                        }, connections[1].awaitMessage());
+                    }
+
+                    @Test
+                    void privmsgUnknownUserTest() {
+                        connections[0].send("PRIVMSG unknown :Hey!");
+                        assertArrayEquals(new String[]{
+                                ":jircd-host 401 bob unknown :No such nick/channel"
+                        }, connections[0].awaitMessage());
+                        assertArrayEquals(EMPTY_ARRAY, connections[1].awaitMessage());
+                    }
+                }
+
+                @Nested
+                class UserToChannelTest {
+                    Channel channel;
+
+                    @BeforeEach
+                    void setUp() {
+                        connections[1].send("JOIN #hello");
+                        connections[1].ignoreMessage(3);
+                        assumeTrue(getChannel("#hello").isPresent());
+                        channel = getChannel("#hello").get();
+                        assumeFalse(channel.users().isEmpty());
+                    }
+
+                    @Test
+                    void privmsgSameChannelTest() {
+                        connections[0].send("JOIN #hello");
+                        connections[0].ignoreMessage(3);
+                        connections[1].ignoreMessage();
+                        connections[0].send("PRIVMSG #hello :Hey!");
+                        assertArrayEquals(EMPTY_ARRAY, connections[0].awaitMessage());
+                        assertArrayEquals(new String[]{
+                                ":bob PRIVMSG #hello :Hey!"
+                        }, connections[1].awaitMessage());
+                    }
+
+                    @Test
+                    void privmsgNotSameChannelTest() {
+                        connections[0].send("PRIVMSG #hello :Hey!");
+                        assertArrayEquals(EMPTY_ARRAY, connections[0].awaitMessage());
+                        assertArrayEquals(new String[]{
+                                ":bob PRIVMSG #hello :Hey!"
+                        }, connections[1].awaitMessage());
+                    }
+
+                    @Test
+                    void privmsgNotSameChannelAndRefuseExternalMessageTest() {
+                        channel.modes().noExternalMessage(true);
+                        connections[0].send("PRIVMSG #hello :Hey!");
+                        assertArrayEquals(new String[]{
+                                ":jircd-host 404 bob #hello :Cannot send to channel"
+                        }, connections[0].awaitMessage());
+                        assertArrayEquals(EMPTY_ARRAY, connections[1].awaitMessage());
+                    }
+
+                    @Test
+                    void privmsgBannedAndNoExemptTest() {
+                        channel.modes().bans().add("bob!*@*");
+                        connections[0].send("PRIVMSG #hello :Hey!");
+                        assertArrayEquals(new String[]{
+                                ":jircd-host 404 bob #hello :Cannot send to channel"
+                        }, connections[0].awaitMessage());
+                        assertArrayEquals(EMPTY_ARRAY, connections[1].awaitMessage());
+                    }
+
+                    @Test
+                    void privmsgInModerateButNotVoiceTest() {
+                        connections[0].send("JOIN #hello");
+                        connections[0].ignoreMessage(3);
+                        connections[1].ignoreMessage();
+                        channel.modes().moderate(true);
+                        connections[0].send("PRIVMSG #hello :Hey!");
+                        assertArrayEquals(new String[]{
+                                ":jircd-host 404 bob #hello :Cannot send to channel"
+                        }, connections[0].awaitMessage());
+                        assertArrayEquals(EMPTY_ARRAY, connections[1].awaitMessage());
+                    }
+
+                    @Test
+                    void privmsgInModerateWithVoiceTest() {
+                        connections[0].send("JOIN #hello");
+                        connections[0].ignoreMessage(3);
+                        connections[1].ignoreMessage();
+                        channel.modes().moderate(true);
+                        ((ChannelImpl) channel).prefix(server.users().get(0), "+");
+                        connections[0].send("PRIVMSG #hello :Hey!");
+                        assertArrayEquals(EMPTY_ARRAY, connections[0].awaitMessage());
+                        assertArrayEquals(new String[]{
+                                ":bob PRIVMSG #hello :Hey!"
+                        }, connections[1].awaitMessage());
+                    }
+
+                    @Test
+                    void privmsgToOwnerChannelTest() {
+                        addConnections(1);
+                        connections[0].send("JOIN #hello");
+                        connections[0].ignoreMessage(3);
+                        connections[1].ignoreMessage();
+                        connections[2].send("JOIN #hello");
+                        connections[2].ignoreMessage(3);
+                        connections[0].ignoreMessage();
+                        connections[1].ignoreMessage();
+
+                        connections[0].send("PRIVMSG ~#hello :Hey!");
+                        assertArrayEquals(EMPTY_ARRAY, connections[0].awaitMessage());
+                        assertArrayEquals(new String[]{
+                                ":bob PRIVMSG ~#hello :Hey!"
+                        }, connections[1].awaitMessage());
+                        assertArrayEquals(EMPTY_ARRAY, connections[2].awaitMessage());
+                    }
+                }
+            }
+
+            @Nested
+            class NoticeCommand {
+
+                Channel channel;
+
+                @BeforeEach
+                void setUp() {
+                    connections[1].send("JOIN #hello");
+                    connections[1].ignoreMessage(3);
+                    assumeTrue(getChannel("#hello").isPresent());
+                    channel = getChannel("#hello").get();
+                    assumeFalse(channel.users().isEmpty());
+                }
+
+                @Test
+                void noticeSameChannelTest() {
+                    connections[0].send("JOIN #hello");
+                    connections[0].ignoreMessage(3);
+                    connections[1].ignoreMessage();
+                    connections[0].send("NOTICE #hello :Hey!");
+                    assertArrayEquals(EMPTY_ARRAY, connections[0].awaitMessage());
+                    assertArrayEquals(new String[]{
+                            ":bob NOTICE #hello :Hey!"
+                    }, connections[1].awaitMessage());
+                }
+
+                @Test
+                void noticeNotSameChannelTest() {
+                    connections[0].send("NOTICE #hello :Hey!");
+                    assertArrayEquals(EMPTY_ARRAY, connections[0].awaitMessage());
+                    assertArrayEquals(new String[]{
+                            ":bob NOTICE #hello :Hey!"
+                    }, connections[1].awaitMessage());
+                }
+
+                @Test
+                void noticeNotSameChannelAndRefuseExternalMessageTest() {
+                    channel.modes().noExternalMessage(true);
+                    connections[0].send("NOTICE #hello :Hey!");
+                    assertArrayEquals(EMPTY_ARRAY, connections[0].awaitMessage());
+                    assertArrayEquals(EMPTY_ARRAY, connections[1].awaitMessage());
+                }
+
+                @Test
+                void noticeBannedAndNoExemptTest() {
+                    channel.modes().bans().add("bob!*@*");
+                    connections[0].send("NOTICE #hello :Hey!");
+                    assertArrayEquals(EMPTY_ARRAY, connections[0].awaitMessage());
+                    assertArrayEquals(EMPTY_ARRAY, connections[1].awaitMessage());
+                }
+
+                @Test
+                void noticeInModerateButNotVoiceTest() {
+                    connections[0].send("JOIN #hello");
+                    connections[0].ignoreMessage(3);
+                    connections[1].ignoreMessage();
+                    channel.modes().moderate(true);
+                    connections[0].send("NOTICE #hello :Hey!");
+                    assertArrayEquals(EMPTY_ARRAY, connections[0].awaitMessage());
+                    assertArrayEquals(EMPTY_ARRAY, connections[1].awaitMessage());
+                }
+
+                @Test
+                void noticeInModerateWithVoiceTest() {
+                    connections[0].send("JOIN #hello");
+                    connections[0].ignoreMessage(3);
+                    connections[1].ignoreMessage();
+                    channel.modes().moderate(true);
+                    ((ChannelImpl) channel).prefix(server.users().get(0), "+");
+                    connections[0].send("NOTICE #hello :Hey!");
+                    assertArrayEquals(EMPTY_ARRAY, connections[0].awaitMessage());
+                    assertArrayEquals(new String[]{
+                            ":bob NOTICE #hello :Hey!"
+                    }, connections[1].awaitMessage());
+                }
+
+                @Test
+                void noticeToOwnerChannelTest() {
+                    addConnections(1);
+                    connections[0].send("JOIN #hello");
+                    connections[0].ignoreMessage(3);
+                    connections[1].ignoreMessage();
+                    connections[2].send("JOIN #hello");
+                    connections[2].ignoreMessage(3);
+                    connections[0].ignoreMessage();
+                    connections[1].ignoreMessage();
+
+                    connections[0].send("NOTICE ~#hello :Hey!");
+                    assertArrayEquals(EMPTY_ARRAY, connections[0].awaitMessage());
+                    assertArrayEquals(new String[]{
+                            ":bob NOTICE ~#hello :Hey!"
+                    }, connections[1].awaitMessage());
+                    assertArrayEquals(EMPTY_ARRAY, connections[2].awaitMessage());
                 }
             }
         }

@@ -19,7 +19,7 @@ public class PassCommand {
             user.send(Message.ERR_ALREADYREGISTERED.parameters(user.info().format()));
             return;
         }
-        ((UserImpl) user).setState(UserState.CONNECTED);
+        ((UserImpl) user).state(UserState.CONNECTED);
         user.info().validPass();
         if (user.info().canRegistrationBeComplete()) {
             ((UserImpl) user).finishRegistration();

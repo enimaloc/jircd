@@ -26,6 +26,7 @@ public class Message {
     public static final Message RPL_ADMINLOC1       = new Message(":%s 257 %s :%s");
     public static final Message RPL_ADMINLOC2       = new Message(":%s 258 %s :%s");
     public static final Message RPL_ADMINEMAIL      = new Message(":%s 259 %s :%s");
+    public static final Message RPL_AWAY            = new Message(":%s 301 %s %s :%s");
     public static final Message RPL_LISTSTART       = new Message(":%s 321 %s Channel :Users  Name");
     public static final Message RPL_LIST            = new Message(":%s 322 %s %s %s :%s");
     public static final Message RPL_LISTEND         = new Message(":%s 323 %s :End of /LIST");
@@ -52,8 +53,10 @@ public class Message {
     public static final Message RPL_TIME            = new Message(":%s 391 %s :%s");
 
     public static final Message ERR_UNKNOWNERROR      = new Message(":%s 400 %s %s :%s");
+    public static final Message ERR_NOSUCHNICK        = new Message(":%s 401 %s %s :No such nick/channel");
     public static final Message ERR_NOSUCHSERVER      = new Message(":%s 402 %s %s :No such server");
     public static final Message ERR_NOSUCHCHANNEL     = new Message(":%s 403 %s %s :No such channel");
+    public static final Message ERR_CANNOTSENDTOCHAN  = new Message(":%s 404 %s %s :Cannot send to channel");
     public static final Message ERR_TOOMANYCHANNELS   = new Message(":%s 405 %s %s :You have joined too many channels");
     public static final Message ERR_NOMOTD            = new Message(":%s 422 %s :MOTD File is missing");
     public static final Message ERR_ERRONEUSNICKNAME  = new Message(":%s 432 %s %s :Erroneus nickname");

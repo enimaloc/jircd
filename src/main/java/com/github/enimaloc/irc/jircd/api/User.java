@@ -4,6 +4,7 @@ import com.github.enimaloc.irc.jircd.internal.UserImpl;
 import com.github.enimaloc.irc.jircd.internal.UserState;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 
 public interface User {
     void send(Message message);
@@ -21,6 +22,8 @@ public interface User {
     List<Channel> channels();
 
     Modes modes();
+
+    Optional<String> away();
 
     class Info {
 

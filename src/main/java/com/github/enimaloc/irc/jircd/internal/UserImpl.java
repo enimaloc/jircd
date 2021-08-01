@@ -32,6 +32,7 @@ public class UserImpl extends Thread implements User {
     private       UserState        state;
     private       boolean          pingSent = false;
     private       long             nextPing;
+    private       String           away;
 
     public UserImpl(JIRCDImpl server, Socket socket) throws IOException {
         super("Socket-Connection-" + socket.getInetAddress().getHostAddress());
@@ -125,6 +126,7 @@ public class UserImpl extends Thread implements User {
             output.close();
             input.close();
             socket.close();
+            pingTimer.cancel();
             server.originalUsers().remove(this);
         } catch (IOException e) {
             e.printStackTrace();
@@ -139,7 +141,7 @@ public class UserImpl extends Thread implements User {
     public void process(String line, boolean systemInvoke) throws InvocationTargetException, IllegalAccessException {
         String[] split   = line.contains(" ") ? line.split(" ", 2) : new String[]{line, ""};
         String   command = split[0].toUpperCase();
-        String[] params  = split[1].contains(":") ? split[1].split(":") : new String[]{split[1]};
+        String[] params  = split[1].contains(":") ? split[1].split(":", 2) : new String[]{split[1]};
         String[] middle = params.length != 0 && !(params[0].isEmpty() || params[0].isBlank()) ? params[0].contains(
                 " ") ? params[0].split(" ") : new String[]{params[0]} : new String[0];
         String trailing = params.length == 2 ? params[1] : null;
@@ -175,6 +177,10 @@ public class UserImpl extends Thread implements User {
         return state;
     }
 
+    public void state(UserState state) {
+        this.state = state;
+    }
+
     public void finishRegistration() {
         state = UserState.LOGGED;
         String userInfo = info.format();
@@ -188,10 +194,6 @@ public class UserImpl extends Thread implements User {
         } catch (InvocationTargetException | IllegalAccessException e) {
             e.printStackTrace();
         }
-    }
-
-    public void setState(UserState state) {
-        this.state = state;
     }
 
     @Override
@@ -216,6 +218,15 @@ public class UserImpl extends Thread implements User {
     @Override
     public Modes modes() {
         return modes;
+    }
+
+    @Override
+    public Optional<String> away() {
+        return Optional.ofNullable(away);
+    }
+
+    public void away(String away) {
+        this.away = away;
     }
 
     @Override
