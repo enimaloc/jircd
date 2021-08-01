@@ -27,6 +27,7 @@ public class Message {
     public static final Message RPL_ADMINLOC2       = new Message(":%s 258 %s :%s");
     public static final Message RPL_ADMINEMAIL      = new Message(":%s 259 %s :%s");
     public static final Message RPL_AWAY            = new Message(":%s 301 %s %s :%s");
+    public static final Message RPL_USERHOST        = new Message(":%s 302 %s :%s");
     public static final Message RPL_LISTSTART       = new Message(":%s 321 %s Channel :Users  Name");
     public static final Message RPL_LIST            = new Message(":%s 322 %s %s %s :%s");
     public static final Message RPL_LISTEND         = new Message(":%s 323 %s :End of /LIST");
