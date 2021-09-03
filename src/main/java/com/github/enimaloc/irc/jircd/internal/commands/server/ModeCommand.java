@@ -5,7 +5,7 @@ import com.github.enimaloc.irc.jircd.api.Message;
 import com.github.enimaloc.irc.jircd.api.User;
 import com.github.enimaloc.irc.jircd.internal.Regex;
 import com.github.enimaloc.irc.jircd.internal.commands.Command;
-import com.github.enimaloc.utils.NumberUtils;
+import fr.enimaloc.enutils.classes.NumberUtils;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;

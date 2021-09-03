@@ -4,7 +4,7 @@ import com.github.enimaloc.irc.jircd.api.Channel;
 import com.github.enimaloc.irc.jircd.api.Message;
 import com.github.enimaloc.irc.jircd.api.User;
 import com.github.enimaloc.irc.jircd.internal.commands.Command;
-import com.github.enimaloc.utils.NumberUtils;
+import fr.enimaloc.enutils.classes.NumberUtils;
 import java.util.Arrays;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;

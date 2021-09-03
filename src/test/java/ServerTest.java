@@ -4,7 +4,7 @@ import com.github.enimaloc.irc.jircd.api.JIRCD;
 import com.github.enimaloc.irc.jircd.api.ServerSettings;
 import com.github.enimaloc.irc.jircd.api.User;
 import com.github.enimaloc.irc.jircd.internal.*;
-import com.github.enimaloc.utils.NumberUtils;
+import fr.enimaloc.enutils.classes.NumberUtils;
 import java.io.*;
 import java.lang.reflect.ParameterizedType;
 import java.net.BindException;
@@ -152,7 +152,7 @@ class ServerTest {
         }
 
         public Optional<Channel> getChannel(String name) {
-            return new ArrayList<>(server.channels()).stream().filter(c -> c.name().equals(name)).findFirst();
+            return new ArrayList<>(server.originalChannels()).stream().filter(c -> c.name().equals(name)).findFirst();
         }
 
         @BeforeEach
