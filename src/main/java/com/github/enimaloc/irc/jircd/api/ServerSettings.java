@@ -1,5 +1,7 @@
 package com.github.enimaloc.irc.jircd.api;
 
+import com.electronwill.nightconfig.core.conversion.ObjectConverter;
+import com.electronwill.nightconfig.core.file.FileConfig;
 import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Field;
@@ -11,21 +13,17 @@ import java.util.function.Predicate;
 
 public class ServerSettings {
 
-    public        int            port        = 6667;
-    public        long           pingTimeout = 100000000;
-    public        long           timeout     = 500000000;
-    public        String         pass        = "hello";
-    public        String         host;
-    public        String         networkName = "enimaloc's";
-    public        Admin          admin       = new Admin("", "", "");
-    public        List<Operator> operators   = new ArrayList<>(
-            Collections.singletonList(new Operator("oper", "operPass")));
-    private final String[]       defaultMotd = new String[]{
-            "This is the default MOTD",
-            "You can edit it by creating an motd.txt file",
-            "At the root of the directory ans set your motd in !"
-    };
-    public        String[]       motd;
+    public int            port        = 6667;
+    public long           pingTimeout = 30000;
+    public long           timeout     = 5000;
+    public String         pass        = "";
+    public String         host        = "jircd";
+    public String         networkName = "jircd";
+    public Admin          admin       = new Admin("", "", "");
+    public List<Operator> operators   = new ArrayList<>(List.of(
+            new Operator("oper", "oper")
+    ));
+    public transient String[]       motd;
 
     public ServerSettings() {
         this(new File("motd.txt"));
@@ -66,41 +64,19 @@ public class ServerSettings {
         return to;
     }
 
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) {
-            return true;
+    public void saveAs(File file) {
+        FileConfig settings = FileConfig.of(file);
+        new ObjectConverter().toConfig(this, settings);
+        settings.save();
+        settings.close();
+    }
+
+    public static class Operator {
+        private String username;
+        private String password;
+
+        public Operator() {
         }
-        if (o == null || getClass() != o.getClass()) {
-            return false;
-        }
-        ServerSettings that = (ServerSettings) o;
-        return port == that.port && pingTimeout == that.pingTimeout && timeout == that.timeout && Objects.equals(
-                pass, that.pass) && host.equals(that.host);
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(port, pingTimeout, timeout, pass, host);
-    }
-
-    @Override
-    public String toString() {
-        return "ServerSettings{" +
-               "port=" + port +
-               ", pingTimeout=" + pingTimeout +
-               ", timeout=" + timeout +
-               ", pass='" + pass + '\'' +
-               ", host='" + host + '\'' +
-               ", networkName='" + networkName + '\'' +
-               ", operators=" + operators +
-               ", motd=" + Arrays.toString(motd) +
-               '}';
-    }
-
-    public class Operator {
-        private final String username;
-        private final String password;
 
         private Operator(String username, String password) {
             this.username = username;
@@ -116,10 +92,13 @@ public class ServerSettings {
         }
     }
 
-    public class Admin {
-        private final String loc1;
-        private final String loc2;
-        private final String email;
+    public static class Admin {
+        private String loc1;
+        private String loc2;
+        private String email;
+
+        public Admin() {
+        }
 
         public Admin(String loc1, String loc2, String email) {
             this.loc1  = loc1;

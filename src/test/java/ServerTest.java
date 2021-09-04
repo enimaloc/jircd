@@ -50,6 +50,7 @@ class ServerTest {
         baseSettings.motd        = new String[0];
         baseSettings.host        = "jircd-host";
         baseSettings.networkName = "JIRCD";
+        baseSettings.pass        = "jircd-pass";
 
         logger.info("Creating server with settings: {}", baseSettings);
         boolean retry = true;
@@ -921,6 +922,7 @@ class ServerTest {
                 assertArrayEquals(new String[]{
                         ":bob PART #jircd"
                 }, connections[0].awaitMessage());
+                assumeTrue(waitFor(1, TimeUnit.SECONDS));
                 assertTrue(getChannel("#jircd").isEmpty());
             }
 
