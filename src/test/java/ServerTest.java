@@ -2104,6 +2104,7 @@ class ServerTest {
                             ":jircd-host 212 OPER 0",
                             ":jircd-host 212 PART 0",
                             ":jircd-host 212 PASS 1",
+                            ":jircd-host 212 PING 0",
                             ":jircd-host 212 PRIVMSG 0",
                             ":jircd-host 212 QUIT 0",
                             ":jircd-host 212 STATS 1",
@@ -2113,7 +2114,7 @@ class ServerTest {
                             ":jircd-host 212 USERHOST 0",
                             ":jircd-host 212 VERSION 0",
                             ":jircd-host 219 M :End of /STATS report"
-                    }, connections[0].awaitMessage(23));
+                    }, connections[0].awaitMessage(24));
                 }
 
                 @Test

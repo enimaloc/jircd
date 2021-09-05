@@ -51,14 +51,14 @@ public class UserImpl extends Thread implements User {
             public void run() {
                 if (System.currentTimeMillis() >= nextPing && !pingSent) {
                     logger.debug("Sent 'PING' to {}", info.host());
-                    send("PING");
+                    send("PING :"+server.settings().host);
                     pingSent = true;
                 }
                 if (pingSent && System.currentTimeMillis() >= nextPing + server.settings().timeout) {
                     terminate("Timed out");
                 }
             }
-        }, 1000);
+        }, 100, 100);
     }
 
     @Override

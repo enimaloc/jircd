@@ -13,6 +13,7 @@ import com.github.enimaloc.irc.jircd.internal.commands.messages.PrivmsgCommand;
 import com.github.enimaloc.irc.jircd.internal.commands.miscellaneous.KillCommand;
 import com.github.enimaloc.irc.jircd.internal.commands.optional.UserhostCommand;
 import com.github.enimaloc.irc.jircd.internal.commands.server.*;
+import com.github.enimaloc.irc.jircd.internal.commands.undocumented.miscellaneous.PingCommand;
 import java.io.IOException;
 import java.lang.reflect.Method;
 import java.net.ServerSocket;
@@ -69,7 +70,11 @@ public class JIRCDImpl extends Thread implements JIRCD {
                 new UserhostCommand(),
 
                 // Miscellaneous Messages
-                new KillCommand()
+                new KillCommand(),
+
+                // Undocumented
+                // Miscellaneous
+                new PingCommand()
         )) {
             Class<?> clazz         = cmd.getClass();
             String   nameByAClazz  = "__DEFAULT__";
