@@ -160,6 +160,7 @@ public class UserImpl extends Thread implements User {
                       .stream()
                       .min(Comparator.comparingInt(Command.CommandIdentifier::parametersCount))
                       .ifPresent(min -> send(Message.ERR_NEEDMOREPARAMS.parameters(info.format(), command)));
+            return;
         }
         Command.CommandIdentity cmd = commandMap.get(identifier);
 
