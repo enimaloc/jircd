@@ -475,7 +475,6 @@ class ServerTest {
                         continue;
                     }
                     String isSupport = messages[0];
-                    System.out.println(isSupport);
                     assertTrue(isSupport.startsWith(":jircd-host 005 bob "));
                     assertTrue(isSupport.endsWith(":are supported by this server"));
                     isSupport = isSupport.replaceFirst(":jircd-host 005 bob ", "")

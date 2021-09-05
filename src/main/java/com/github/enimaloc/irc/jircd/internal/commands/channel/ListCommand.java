@@ -57,7 +57,6 @@ public class ListCommand {
 
     @Command
     public void execute(User user, String channelsRaw, String eListRaw) {
-        System.out.println("user = " + user + ", channelsRaw = " + channelsRaw + ", eListRaw = " + eListRaw);
         Predicate<Channel> predicate = channel -> true;
         String[]           eList;
         if (eListRaw == null || eListRaw.isBlank() || eListRaw.isEmpty()) {
