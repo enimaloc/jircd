@@ -4,6 +4,8 @@ JIRCD is a Java [Internet Relay Chat](https://wikipedia.org/wiki/Internet_Relay_
 this project follows [Oracle Code Convention](https://www.oracle.com/java/technologies/javase/codeconventions-contents.html), 
 and we follow the [Internet Relay Chat documentation](https://modern.ircdocs.horse/index.html) 
 and for undocumented part needed we follow [RFC 2812](https://datatracker.ietf.org/doc/html/rfc2812).
+For commit we follow [Conventional Commit](https://www.conventionalcommits.org/en/v1.0.0/).
+All pull requests which do not respect the conventions above will be considered as [invalid](https://github.com/enimaloc/jircd/issues?q=label%3Ainvalid).
 
 ## Supported commands
 
