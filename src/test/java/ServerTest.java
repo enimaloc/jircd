@@ -18,6 +18,8 @@ import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BooleanSupplier;
 import java.util.function.IntPredicate;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import org.junit.jupiter.api.*;
 import org.slf4j.Logger;
@@ -51,12 +53,13 @@ class ServerTest {
         baseSettings.host        = "jircd-host";
         baseSettings.networkName = "JIRCD";
         baseSettings.pass        = "jircd-pass";
+        baseSettings.pingTimeout = TimeUnit.DAYS.toMillis(1);
 
         logger.info("Creating server with settings: {}", baseSettings);
         boolean retry = true;
         while (retry && server == null) {
             try {
-                server     = (JIRCDImpl) new JIRCD.Builder()
+                server = (JIRCDImpl) new JIRCD.Builder()
                         .withSettings(baseSettings)
                         .build();
                 attrLength = (int) Math.max(Math.ceil(server.supportAttribute().length() / 13.), 1);
@@ -2124,12 +2127,16 @@ class ServerTest {
 
                 @Test
                 void statsUTest() {
+                    Pattern pat = Pattern.compile("^:jircd-host 242 :Server Up 0 days 0:[0-5][0-9]:[0-5][0-9]$");
+
                     connections[0].send("STATS u");
-                    assertArrayEquals(new String[]{
-                            ":jircd-host 242 :Server Up 0 days 0:00:%02d".formatted(
-                                    ChronoUnit.SECONDS.between(server.createdAt().toInstant(), ZonedDateTime.now())),
-                            ":jircd-host 219 U :End of /STATS report"
-                    }, connections[0].awaitMessage(2));
+                    assertTrue(pat.matcher(connections[0].awaitMessage()[0]).matches());
+                    assertEquals(":jircd-host 219 U :End of /STATS report", connections[0].awaitMessage()[0]);
+
+                    assertTrue(waitFor(72, TimeUnit.SECONDS));
+                    connections[0].send("STATS u");
+                    assertTrue(pat.matcher(connections[0].awaitMessage()[0]).matches());
+                    assertEquals(":jircd-host 219 U :End of /STATS report", connections[0].awaitMessage()[0]);
                 }
 
                 @Test

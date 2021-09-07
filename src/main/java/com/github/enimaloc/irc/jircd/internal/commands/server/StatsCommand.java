@@ -33,9 +33,9 @@ public class StatsCommand {
             case 'o' -> user.send(Message.RPL_STATSOLINE.parameters(user.info().format()));
             case 'u' -> user.send(Message.RPL_STATSUPTIME.parameters(
                     ChronoUnit.DAYS.between(serverObj.createdAt().toInstant(), ZonedDateTime.now()),
-                    ChronoUnit.HOURS.between(serverObj.createdAt().toInstant(), ZonedDateTime.now()),
-                    ChronoUnit.MINUTES.between(serverObj.createdAt().toInstant(), ZonedDateTime.now()),
-                    ChronoUnit.SECONDS.between(serverObj.createdAt().toInstant(), ZonedDateTime.now())
+                    ChronoUnit.HOURS.between(serverObj.createdAt().toInstant(), ZonedDateTime.now())%24,
+                    ChronoUnit.MINUTES.between(serverObj.createdAt().toInstant(), ZonedDateTime.now())%60,
+                    ChronoUnit.SECONDS.between(serverObj.createdAt().toInstant(), ZonedDateTime.now())%60
             ));
             case 'y' -> user.send(Message.RPL_STATSLINKLINE.parameters(user.info().format()));
         }
