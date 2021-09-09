@@ -59,7 +59,7 @@ class ServerTest {
         boolean retry = true;
         while (retry && server == null) {
             try {
-                server = (JIRCDImpl) new JIRCD.Builder()
+                server     = (JIRCDImpl) new JIRCD.Builder()
                         .withSettings(baseSettings)
                         .build();
                 attrLength = (int) Math.max(Math.ceil(server.supportAttribute().length() / 13.), 1);
@@ -2707,6 +2707,8 @@ class ServerTest {
                     @Test
                     void privmsgToOwnerChannelTest() {
                         addConnections(1);
+                        connections[2].createUser("fred", "Fred Bloggs");
+
                         connections[0].send("JOIN #hello");
                         connections[0].ignoreMessage(3);
                         connections[1].ignoreMessage();
@@ -2721,6 +2723,44 @@ class ServerTest {
                                 ":bob PRIVMSG ~#hello :Hey!"
                         }, connections[1].awaitMessage());
                         assertArrayEquals(EMPTY_ARRAY, connections[2].awaitMessage());
+                    }
+
+                    @Test
+                    void privmsgToOperatorAndUpperTest() {
+                        addConnections(2);
+                        connections[2].createUser("fred", "Fred Bloggs");
+                        connections[3].createUser("tommy", "Tommy Atkins");
+
+                        connections[0].send("JOIN #hello");
+                        connections[0].ignoreMessage(3);
+                        connections[1].ignoreMessage();
+                        connections[2].send("JOIN #hello");
+                        connections[2].ignoreMessage(3);
+                        connections[0].ignoreMessage();
+                        connections[1].ignoreMessage();
+                        connections[3].send("JOIN #hello");
+                        connections[3].ignoreMessage(3);
+                        connections[0].ignoreMessage();
+                        connections[1].ignoreMessage();
+                        connections[2].ignoreMessage();
+
+                        Optional<User> fredOpt = channel.users()
+                                                        .stream()
+                                                        .filter(u -> u.info().username().equals("fred"))
+                                                        .findFirst();
+                        assumeTrue(fredOpt.isPresent());
+                        User fred = fredOpt.get();
+                        ((ChannelImpl) channel).prefix(fred, "@");
+
+                        connections[0].send("PRIVMSG @#hello :Hey!");
+                        assertArrayEquals(EMPTY_ARRAY, connections[0].awaitMessage());
+                        assertArrayEquals(new String[]{
+                                ":bob PRIVMSG @#hello :Hey!"
+                        }, connections[1].awaitMessage());
+                        assertArrayEquals(new String[]{
+                                ":bob PRIVMSG @#hello :Hey!"
+                        }, connections[2].awaitMessage());
+                        assertArrayEquals(EMPTY_ARRAY, connections[3].awaitMessage());
                     }
                 }
             }
