@@ -59,6 +59,8 @@ public class PrivmsgCommand {
         if (!prefix.isEmpty()) {
             StringBuilder builder = new StringBuilder("[");
             for (char c : prefix.toCharArray()) {
+                // Switch here do not use break to pass through the labels,
+                // because if a prefix is read all the prefixes below will be added.
                 switch (c) {
                     case '+':
                         builder.append("+");
