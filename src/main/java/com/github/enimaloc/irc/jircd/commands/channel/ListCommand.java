@@ -69,7 +69,7 @@ public class ListCommand {
         for (String e : eList) {
             char[] chars       = e.toCharArray();
             int    i           = 0;
-            char   identifier  = chars.length >= 3 ? Character.toUpperCase(chars[i++]) : '\u0000'; // ignored for now
+            char   identifier  = chars[i] != '<' && chars[i] != '>' ? Character.toUpperCase(chars[i++]) : '\u0000'; // ignored for now
             char   comparaison = Character.toUpperCase(chars[i++]);
             int    b           = NumberUtils.getSafe(e.substring(i), Integer.class).orElse(Integer.MIN_VALUE);
 
