@@ -67,8 +67,8 @@ public class User extends Thread {
         while (state != UserState.DISCONNECTED) {
             try {
                 String line = input.readLine();
-                logger.trace("Handle '{}'", line);
                 if (line != null) {
+                    logger.trace("Handle '{}'", line);
                     nextPing = System.currentTimeMillis() + server.settings().pingTimeout;
                     pingSent = false;
                     logger.trace("Rescheduled ping for {} to {}", this.info.host(),
