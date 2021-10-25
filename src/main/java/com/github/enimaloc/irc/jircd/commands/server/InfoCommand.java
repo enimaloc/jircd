@@ -33,7 +33,7 @@ public class InfoCommand {
             return;
         }
 
-        for (String info : server.infos()) {
+        for (String info : server.info()) {
             user.send(Message.RPL_INFO.parameters(info));
         }
         user.send(Message.RPL_ENDOFINFO);
