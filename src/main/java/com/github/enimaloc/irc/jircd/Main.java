@@ -1,21 +1,23 @@
 package com.github.enimaloc.irc.jircd;
 
-import com.github.enimaloc.irc.jircd.api.JIRCD;
-import com.github.enimaloc.irc.jircd.api.ServerSettings;
+import com.electronwill.nightconfig.core.conversion.ObjectConverter;
+import com.electronwill.nightconfig.core.file.FileConfig;
+import com.github.enimaloc.irc.jircd.server.JIRCD;
+import com.github.enimaloc.irc.jircd.server.ServerSettings;
 import java.io.File;
 import java.io.IOException;
 
 public class Main {
 
     public static void main(String[] args) {
-        File settings = new File("settings.toml");
-        if (!settings.exists()) {
-            new ServerSettings().saveAs(settings);
+        File file = new File("settings.toml");
+        if (!file.exists()) {
+            new ServerSettings().saveAs(file);
         }
+        FileConfig settings = FileConfig.of(file);
+        settings.load();
         try {
-            JIRCD server = new JIRCD.Builder()
-                    .withFileSettings(settings)
-                    .build();
+            new JIRCD(new ObjectConverter().toObject(settings, ServerSettings::new));
         } catch (IOException e) {
             e.printStackTrace();
         }

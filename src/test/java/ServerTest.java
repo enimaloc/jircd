@@ -1,9 +1,11 @@
-import com.github.enimaloc.irc.jircd.Constant;
-import com.github.enimaloc.irc.jircd.api.Channel;
-import com.github.enimaloc.irc.jircd.api.JIRCD;
-import com.github.enimaloc.irc.jircd.api.ServerSettings;
-import com.github.enimaloc.irc.jircd.api.User;
-import com.github.enimaloc.irc.jircd.internal.*;
+import com.github.enimaloc.irc.jircd.*;
+import com.github.enimaloc.irc.jircd.server.JIRCD;
+import com.github.enimaloc.irc.jircd.server.ServerSettings;
+import com.github.enimaloc.irc.jircd.channel.Channel;
+import com.github.enimaloc.irc.jircd.server.attributes.SupportAttribute;
+import com.github.enimaloc.irc.jircd.user.User;
+import com.github.enimaloc.irc.jircd.user.UserInfo;
+import com.github.enimaloc.irc.jircd.user.UserState;
 import fr.enimaloc.enutils.classes.NumberUtils;
 import java.io.*;
 import java.lang.reflect.ParameterizedType;
@@ -13,12 +15,10 @@ import java.net.SocketTimeoutException;
 import java.nio.charset.StandardCharsets;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
-import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BooleanSupplier;
 import java.util.function.IntPredicate;
-import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import org.junit.jupiter.api.*;
@@ -42,8 +42,8 @@ class ServerTest {
 
     static ServerSettings baseSettings;
     static int            attrLength;
-    JIRCDImpl server;
-    Logger    logger = LoggerFactory.getLogger(ServerTest.class);
+    JIRCD  server;
+    Logger logger = LoggerFactory.getLogger(ServerTest.class);
 
     @BeforeEach
     void setUp(TestInfo info) {
@@ -59,9 +59,7 @@ class ServerTest {
         boolean retry = true;
         while (retry && server == null) {
             try {
-                server     = (JIRCDImpl) new JIRCD.Builder()
-                        .withSettings(baseSettings)
-                        .build();
+                server     = new JIRCD(baseSettings);
                 attrLength = (int) Math.max(Math.ceil(server.supportAttribute().length() / 13.), 1);
                 retry      = false;
             } catch (BindException ignored) {
@@ -264,7 +262,7 @@ class ServerTest {
                     ":jircd-host 422 bob :MOTD File is missing"
             }, connections[0].awaitMessage());
             assertEquals(Math.max(Math.ceil(attr.length() / 13.), 1), count);
-            UserImpl.Info info = server.users().get(0).info();
+            UserInfo info = server.users().get(0).info();
             assertEquals("127.0.0.1", info.host());
             assertEquals("bob", info.nickname());
             assertEquals("bobby", info.username());
@@ -688,7 +686,7 @@ class ServerTest {
                 void passTest() {
                     connections[0].send("PASS " + baseSettings.pass);
                     assertEquals(0, connections[0].awaitMessage().length);
-                    UserImpl.Info info = server.users().get(0).info();
+                    UserInfo info = server.users().get(0).info();
                     assertTrue(info.passwordValid());
 
                     assertEquals("127.0.0.1", info.host());
@@ -738,7 +736,7 @@ class ServerTest {
 
                     connections[0].send("NICK bob");
                     Thread.sleep(TIMEOUT_BETWEEN_COMMUNICATION);
-                    UserImpl.Info info = server.users().get(0).info();
+                    UserInfo info = server.users().get(0).info();
                     assertTrue(info.passwordValid());
                     assertEquals("bob", info.nickname());
                     assertArrayEquals(new String[]{}, connections[0].awaitMessage());
@@ -790,7 +788,7 @@ class ServerTest {
                     connections[0].send("PASS " + baseSettings.pass);
                     connections[0].send("USER bobby 0 * :Mobbye Plav" + ENDING);
                     assertTrue(waitFor(500, TimeUnit.MILLISECONDS));
-                    UserImpl.Info info = server.users().get(0).info();
+                    UserInfo info = server.users().get(0).info();
                     assertEquals("bobby", info.username());
                     assertEquals("Mobbye Plav", info.realName());
                     assertTrue(info.passwordValid());
@@ -1205,8 +1203,8 @@ class ServerTest {
                     connections[0].send("JOIN #jircd");
                     connections[0].ignoreMessage(4);
 
-                    server.supportAttribute().channelLen(1);
-                    assumeTrue(server.supportAttribute().channelLen() == 1);
+                    server.supportAttribute().channelAttribute().channelLen(1);
+                    assumeTrue(server.supportAttribute().channelAttribute().channelLen() == 1);
 
                     connections[0].send("JOIN #enimaloc");
                     assertArrayEquals(new String[]{
@@ -2174,12 +2172,12 @@ class ServerTest {
                 @Nested
                 class UserMode {
 
-                    UserImpl user;
+                    User user;
 
                     @BeforeEach
                     void setUp() {
                         assumeFalse(server.users().isEmpty());
-                        assumeFalse((user = (UserImpl) server.users().get(0)) == null);
+                        assumeFalse((user = (User) server.users().get(0)) == null);
                         assumeTrue(user.info().format().equals("bob"));
                     }
 
@@ -2315,7 +2313,7 @@ class ServerTest {
 
                 @Nested
                 class ChannelMode {
-                    ChannelImpl channel;
+                    Channel channel;
 
                     @BeforeEach
                     void setUp() {
@@ -2323,7 +2321,7 @@ class ServerTest {
                         connections[0].ignoreMessage(3);
                         Optional<Channel> channelOpt = getChannel("#bob");
                         assumeTrue(channelOpt.isPresent());
-                        this.channel = (ChannelImpl) channelOpt.get();
+                        this.channel = (Channel) channelOpt.get();
                     }
 
                     @Test
@@ -2603,7 +2601,7 @@ class ServerTest {
 
                     @Test
                     void privmsgAwayUserTest() {
-                        ((UserImpl) server.users().get(1)).away("I'm not here for now");
+                        ((User) server.users().get(1)).away("I'm not here for now");
                         connections[0].send("PRIVMSG john :Hey!");
                         assertArrayEquals(new String[]{
                                 ":jircd-host 301 bob john :I'm not here for now"
@@ -2696,7 +2694,7 @@ class ServerTest {
                         connections[0].ignoreMessage(3);
                         connections[1].ignoreMessage();
                         channel.modes().moderate(true);
-                        ((ChannelImpl) channel).prefix(server.users().get(0), "+");
+                        ((Channel) channel).prefix(server.users().get(0), "+");
                         connections[0].send("PRIVMSG #hello :Hey!");
                         assertArrayEquals(EMPTY_ARRAY, connections[0].awaitMessage());
                         assertArrayEquals(new String[]{
@@ -2750,7 +2748,7 @@ class ServerTest {
                                                         .findFirst();
                         assumeTrue(fredOpt.isPresent());
                         User fred = fredOpt.get();
-                        ((ChannelImpl) channel).prefix(fred, "@");
+                        ((Channel) channel).prefix(fred, "@");
 
                         connections[0].send("PRIVMSG @#hello :Hey!");
                         assertArrayEquals(EMPTY_ARRAY, connections[0].awaitMessage());
@@ -2833,7 +2831,7 @@ class ServerTest {
                     connections[0].ignoreMessage(3);
                     connections[1].ignoreMessage();
                     channel.modes().moderate(true);
-                    ((ChannelImpl) channel).prefix(server.users().get(0), "+");
+                    ((Channel) channel).prefix(server.users().get(0), "+");
                     connections[0].send("NOTICE #hello :Hey!");
                     assertArrayEquals(EMPTY_ARRAY, connections[0].awaitMessage());
                     assertArrayEquals(new String[]{
@@ -2956,7 +2954,7 @@ class ServerTest {
                     addConnections(2);
                     connections[1].createUser("john", "John Doe");
                     assumeTrue(server.users().get(1) != null);
-                    ((UserImpl) server.users().get(1)).away("Away!");
+                    ((User) server.users().get(1)).away("Away!");
                     connections[2].createUser("fred", "Fred Bloggs");
 
                     connections[0].send("USERHOST john fred");
