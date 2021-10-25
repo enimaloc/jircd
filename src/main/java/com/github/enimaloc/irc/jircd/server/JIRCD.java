@@ -208,7 +208,7 @@ public class JIRCD extends Thread {
         return createdAt;
     }
 
-    public String[] infos() {
+    public String[] info() {
         return new String[]{
                 Constant.NAME + " v" + Constant.VERSION,
                 "by Antoine <antoine@enimaloc.fr>",
