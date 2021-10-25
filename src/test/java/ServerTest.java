@@ -43,7 +43,7 @@ class ServerTest {
     static ServerSettings baseSettings;
     static int            attrLength;
     JIRCD  server;
-    Logger logger = LoggerFactory.getLogger(ServerTest.class);
+    static Logger logger = LoggerFactory.getLogger(ServerTest.class);
 
     @BeforeEach
     void setUp(TestInfo info) {
@@ -89,7 +89,7 @@ class ServerTest {
                   try {
                       field.set(server.settings(), field.get(settings));
                   } catch (IllegalAccessException e) {
-                      e.printStackTrace();
+                      logger.error(e.getLocalizedMessage(), e);
                   }
               });
     }
@@ -442,7 +442,7 @@ class ServerTest {
                         messages.add(input.readLine());
                     } catch (SocketTimeoutException ignored) {
                     } catch (IOException e) {
-                        e.printStackTrace();
+                        logger.error(e.getLocalizedMessage(), e);
                     }
                 }
                 return messages.toArray(String[]::new);

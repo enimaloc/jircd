@@ -6,6 +6,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.BiPredicate;
+import org.slf4j.LoggerFactory;
 
 public class Attribute {
 
@@ -44,7 +45,7 @@ public class Attribute {
                     ret.put(declaredField.getName(), declaredField.get(this));
                 }
             } catch (IllegalAccessException e) {
-                e.printStackTrace();
+                LoggerFactory.getLogger(Attribute.class).error(e.getLocalizedMessage(), e);
             }
         }
         return ret;

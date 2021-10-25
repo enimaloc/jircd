@@ -79,7 +79,7 @@ public class User extends Thread {
                 if ((e.getMessage() == null || !e.getMessage().equals("Socket closed")) &&
                     state != UserState.DISCONNECTED) {
                     terminate("Internal error");
-                    e.printStackTrace();
+                    logger.error(e.getLocalizedMessage(), e);
                 }
             }
         }
@@ -98,7 +98,7 @@ public class User extends Thread {
             output.flush();
         } catch (IOException e) {
             if (!e.getMessage().equals("Socket closed") && !server.isShutdown()) {
-                e.printStackTrace();
+                logger.error(e.getLocalizedMessage(), e);
             }
         }
     }
@@ -122,7 +122,7 @@ public class User extends Thread {
             pingTimer.cancel();
             server.originalUsers().remove(this);
         } catch (IOException e) {
-            e.printStackTrace();
+            logger.error(e.getLocalizedMessage(), e);
         }
     }
 
@@ -185,7 +185,7 @@ public class User extends Thread {
         try {
             process("MOTD");
         } catch (InvocationTargetException | IllegalAccessException e) {
-            e.printStackTrace();
+            logger.error(e.getLocalizedMessage(), e);
         }
     }
 

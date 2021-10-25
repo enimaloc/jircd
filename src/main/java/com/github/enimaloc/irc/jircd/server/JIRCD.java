@@ -148,7 +148,7 @@ public class JIRCD extends Thread {
                 users.add(user);
             } catch (IOException e) {
                 if (!(e.getMessage().equals("Socket closed") && isShutdown)) {
-                    e.printStackTrace();
+                    logger.error(e.getLocalizedMessage(), e);
                 }
             }
         }

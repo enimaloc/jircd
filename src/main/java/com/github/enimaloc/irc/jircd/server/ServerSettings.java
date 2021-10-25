@@ -10,8 +10,12 @@ import java.net.UnknownHostException;
 import java.nio.file.Files;
 import java.util.*;
 import java.util.function.Predicate;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class ServerSettings {
+
+    private transient final static Logger logger = LoggerFactory.getLogger(ServerSettings.class);
 
     public int            port        = 6667;
     public long           pingTimeout = 30000;
@@ -33,12 +37,12 @@ public class ServerSettings {
         try {
             host = InetAddress.getLocalHost().getHostAddress();
         } catch (UnknownHostException e) {
-            e.printStackTrace();
+            logger.error(e.getLocalizedMessage(), e);
         }
         try {
             motd = motdFile.exists() ? Files.readAllLines(motdFile.toPath()).toArray(String[]::new) : new String[0];
         } catch (IOException e) {
-            e.printStackTrace();
+            logger.error(e.getLocalizedMessage(), e);
         }
     }
 
@@ -58,7 +62,7 @@ public class ServerSettings {
                   try {
                       field.set(to, field.get(this));
                   } catch (IllegalAccessException e) {
-                      e.printStackTrace();
+                      logger.error(e.getLocalizedMessage(), e);
                   }
               });
         return to;
