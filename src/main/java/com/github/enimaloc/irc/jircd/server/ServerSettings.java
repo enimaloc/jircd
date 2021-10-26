@@ -19,14 +19,18 @@ public class ServerSettings {
 
     private transient final static Logger logger = LoggerFactory.getLogger(ServerSettings.class);
 
-    public int            port        = 6667;
-    public long           pingTimeout = 30000;
-    public long           timeout     = 5000;
-    public String         pass        = "";
-    public String         host        = "jircd";
-    public String         networkName = "jircd";
-    public Admin          admin       = new Admin("", "", "");
-    public List<Operator> operators   = new ArrayList<>(List.of(
+    public           int            port           = 6667;
+    public           long           pingTimeout    = 30000;
+    public           long           timeout        = 5000;
+    public           String         pass           = "";
+    public           String         host           = "jircd";
+    public           String         networkName    = "jircd";
+    public           Admin          admin          = new Admin(
+            "Location of the server",
+            "details of the institution hosting it",
+            "administrators@jircd.local"
+    );
+    public           List<Operator> operators      = new ArrayList<>(List.of(
             new Operator("oper", "oper")
     ));
     public transient String[]       motd;

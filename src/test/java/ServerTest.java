@@ -1988,13 +1988,18 @@ class ServerTest {
 
                 @Test
                 void adminTest() {
+                    server.settings().admin = new ServerSettings.Admin(
+                            "Location 1",
+                            "Location 2",
+                            "jircd@local.host"
+                    );
                     connections[0].send("ADMIN");
 
                     assertArrayEquals(new String[]{
                             ":jircd-host 256 bob jircd-host :Administrative info",
-                            ":jircd-host 257 bob :",
-                            ":jircd-host 258 bob :",
-                            ":jircd-host 259 bob :"
+                            ":jircd-host 257 bob :Location 1",
+                            ":jircd-host 258 bob :Location 2",
+                            ":jircd-host 259 bob :jircd@local.host"
                     }, connections[0].awaitMessage(4));
                 }
             }
