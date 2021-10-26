@@ -1,6 +1,7 @@
 package com.github.enimaloc.irc.jircd.commands.channel;
 
 import com.github.enimaloc.irc.jircd.channel.Channel;
+import com.github.enimaloc.irc.jircd.message.Mask;
 import com.github.enimaloc.irc.jircd.message.Message;
 import com.github.enimaloc.irc.jircd.commands.Command;
 import com.github.enimaloc.irc.jircd.user.User;
@@ -96,7 +97,7 @@ public class ListCommand {
             user.server()
                 .channels()
                 .stream()
-                .filter(predicate.and(channel -> channel.name().equals(channelName)))
+                .filter(predicate.and(channel -> new Mask("*"+channelName+"*").toPattern().matcher(channel.name()).matches()))
                 .map(channel -> Message.RPL_LIST.parameters(user.info().format(),
                                                             channel.name(),
                                                             channel.users().size(),
