@@ -5,6 +5,7 @@ import com.electronwill.nightconfig.core.file.FileConfig;
 import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.nio.file.Files;
@@ -57,7 +58,7 @@ public class ServerSettings {
 
     public ServerSettings copy(ServerSettings to, Predicate<Field> copyIf) {
         Arrays.stream(this.getClass().getDeclaredFields())
-              .filter(copyIf)
+              .filter(copyIf.and(field -> !Modifier.isFinal(field.getModifiers())))
               .forEach(field -> {
                   field.setAccessible(true);
                   try {

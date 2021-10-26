@@ -8,6 +8,7 @@ import com.github.enimaloc.irc.jircd.user.UserInfo;
 import com.github.enimaloc.irc.jircd.user.UserState;
 import fr.enimaloc.enutils.classes.NumberUtils;
 import java.io.*;
+import java.lang.reflect.Modifier;
 import java.lang.reflect.ParameterizedType;
 import java.net.BindException;
 import java.net.Socket;
@@ -86,6 +87,7 @@ class ServerTest {
 
     void setSettings(ServerSettings settings) {
         Arrays.stream(ServerSettings.class.getDeclaredFields())
+              .filter(field -> !Modifier.isFinal(field.getModifiers()))
               .forEach(field -> {
                   field.setAccessible(true);
                   try {
