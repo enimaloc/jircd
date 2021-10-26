@@ -45,7 +45,7 @@ class ServerTest {
 
     static ServerSettings baseSettings;
     static int            attrLength;
-    JIRCD  server;
+    JIRCD server;
     static Logger logger = LoggerFactory.getLogger(ServerTest.class);
 
     @BeforeEach
@@ -761,7 +761,7 @@ class ServerTest {
                 @Test
                 void incorrectNickTest() {
                     connections[0].send("PASS " + baseSettings.pass);
-                    String nickname = getRandomString(7, 128, 255, i -> true);
+                    String nickname = getRandomString(7, 160, 255, i -> true);
                     connections[0].send("NICK " + nickname);
                     assertArrayEquals(new String[]{
                             ":jircd-host 432 @127.0.0.1 " + nickname + " :Erroneus nickname"
