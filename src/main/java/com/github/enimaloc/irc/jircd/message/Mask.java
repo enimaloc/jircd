@@ -9,10 +9,10 @@ public record Mask(String mask) {
         for (int i = 0; i < mask.length(); i++) {
             char c = mask.charAt(i);
             switch (c) {
-                case '\\' -> ret.append(mask.charAt(i++));
+                case '\\' -> ret.append(Pattern.quote(mask.charAt(i++)+""));
                 case '?' -> ret.append(".");
                 case '*' -> ret.append(".*");
-                default -> ret.append(c);
+                default -> ret.append(Pattern.quote(c+""));
             }
         }
         return ret.toString();
