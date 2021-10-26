@@ -18,7 +18,7 @@ public class TopicCommand {
     @Command(trailing = true)
     public void execute(User user, String channelName, String topic) {
         if (!Regex.CHANNEL.matcher(channelName).matches()) {
-            user.send(Message.ERR_NOSUCHCHANNEL.parameters(user.info().format(), channelName));
+            user.send(Message.ERR_NOSUCHCHANNEL.client(user.info()).addFormat("channel", channelName));
             return;
         }
 
@@ -27,7 +27,7 @@ public class TopicCommand {
                                            .filter(channel -> channel.name().contains(channelName))
                                            .findFirst();
         if (channelOpt.isEmpty()) {
-            user.send(Message.ERR_NOTONCHANNEL.parameters(user.info().format(), channelName));
+            user.send(Message.ERR_NOTONCHANNEL.client(user.info()).addFormat("channel", channelName));
             return;
         }
 
@@ -35,18 +35,22 @@ public class TopicCommand {
         if (topic == null) {
             Optional<Channel.Topic> topicOpt = channel.topic();
             if (topicOpt.isEmpty()) {
-                user.send(Message.RPL_NOTOPIC.parameters(user.info().format(), channelName));
+                user.send(Message.RPL_NOTOPIC.client(user.info()).addFormat("channel", channelName));
                 return;
             }
             Channel.Topic topicObj = topicOpt.get();
-            user.send(Message.RPL_TOPIC.parameters(user.info().format(), channelName, topicObj.topic()));
-            user.send(Message.RPL_TOPICWHOTIME.parameters(user.info().format(), channelName,
-                                                          topicObj.user().info().nickname(), topicObj.unixTimestamp()));
+            user.send(Message.RPL_TOPIC.client(user.info())
+                                       .addFormat("channel", channelName)
+                                       .addFormat("topic", topicObj.topic()));
+            user.send(Message.RPL_TOPICWHOTIME.client(user.info())
+                                              .addFormat("channel", channelName)
+                                              .addFormat("nick", topicObj.user().info().nickname())
+                                              .addFormat("setat", topicObj.unixTimestamp()));
             return;
         }
 
         if (!channel.prefix(user).matches("[@%]") && channel.modes()._protected()) {
-            user.send(Message.ERR_CHANOPRIVSNEEDED.parameters(user.info().format(), channelName));
+            user.send(Message.ERR_CHANOPRIVSNEEDED.client(user.info()).addFormat("channel", channelName));
             return;
         }
         channel.topic(topic.isEmpty() || topic.isBlank() ? null : new Channel.Topic(topic, user));
@@ -54,12 +58,13 @@ public class TopicCommand {
         Optional<Channel.Topic> topicOpt = channel.topic();
         if (topicOpt.isEmpty()) {
             channel.broadcast(user.server().settings().host,
-                              Message.RPL_NOTOPIC.parameters(user.info().format(), channelName));
+                              Message.RPL_NOTOPIC.client(user.info()).addFormat("channel", channelName));
             return;
         }
         Channel.Topic topicObj = topicOpt.get();
         channel.broadcast(user.server().settings().host,
-                          Message.RPL_TOPIC.parameters(user.info().format(), channelName, topicObj.topic()));
+                          Message.RPL_TOPIC.client(user.info()).addFormat("channel", channelName)
+                                           .addFormat("topic", topicObj.topic()));
     }
 
 }

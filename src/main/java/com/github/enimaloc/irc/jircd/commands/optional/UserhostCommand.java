@@ -50,7 +50,7 @@ public class UserhostCommand {
                .append(u.info().host())
                .append(" ");
         }
-        user.send(Message.RPL_USERHOST.parameters(user.info().format(), ret.toString().trim()));
+        user.send(Message.RPL_USERHOST.client(user.info()).addFormat("reply", ret.toString().trim()));
     }
 
 }

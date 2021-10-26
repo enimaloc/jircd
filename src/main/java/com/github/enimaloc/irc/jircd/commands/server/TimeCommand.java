@@ -18,10 +18,11 @@ public class TimeCommand {
     @Command
     public void execute(User user, String server) {
         if (!user.server().settings().host.equals(server)) {
-            user.send(Message.ERR_NOSUCHSERVER.parameters(user.info().format(), server));
+            user.send(Message.ERR_NOSUCHSERVER.client(user.info()).addFormat("server name", server));
             return;
         }
-        user.send(Message.RPL_TIME.parameters(server,
+        user.send(Message.RPL_TIME.addFormat("server", server)
+                                  .addFormat("string showing server's local time",
                                               DateTimeFormatter.ofPattern("EEEE LLLL dd yyyy - HH:mm O", Locale.ENGLISH)
                                                                .format(ZonedDateTime.now())));
     }

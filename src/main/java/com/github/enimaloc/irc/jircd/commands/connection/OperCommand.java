@@ -25,11 +25,11 @@ public class OperCommand {
         }
         ServerSettings.Operator oper = operOptional.get();
         if (!oper.password().equals(password)) {
-            user.send(Message.ERR_PASSWDMISMATCH.parameters(user.info().format()));
+            user.send(Message.ERR_PASSWDMISMATCH.client(user.info()));
             return;
         }
         user.info().setOper(oper);
-        user.send(Message.RPL_YOUREOPER.parameters(user.info().format()));
+        user.send(Message.RPL_YOUREOPER.client(user.info()));
     }
 
 }

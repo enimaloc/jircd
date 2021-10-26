@@ -38,8 +38,8 @@ public class VersionCommand {
             token.forEach((s, o) -> builder.append(s.toUpperCase(Locale.ROOT))
                                            .append(parseOptional(o))
                                            .append(" "));
-            user.send(
-                    Message.RPL_ISUPPORT.parameters(user.info().format(), builder.deleteCharAt(builder.length() - 1)));
+            user.send(Message.RPL_ISUPPORT.client(user.info())
+                                          .addFormat("tokens", builder.deleteCharAt(builder.length() - 1)));
         }
     }
 
@@ -79,14 +79,14 @@ public class VersionCommand {
         } else if (subject.isPresent()) {
             server = subject.get().server();
         } else {
-            user.send(Message.ERR_NOSUCHSERVER.parameters(user.info().format(), target));
+            user.send(Message.ERR_NOSUCHSERVER.client(user.info()).addFormat("", target));
             return;
         }
 
-        user.send(Message.RPL_VERSION.parameters(user.info().format(),
-                                                 Constant.VERSION,
-                                                 server.settings().host,
-                                                 ""));
+        user.send(Message.RPL_VERSION.client(user.info())
+                                     .addFormat("version", Constant.VERSION)
+                                     .addFormat("server", server.settings().host)
+                                     .addFormat("comments", ""));
         send_ISUPPORT(user, server);
     }
 }

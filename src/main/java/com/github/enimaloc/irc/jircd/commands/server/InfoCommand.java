@@ -29,12 +29,12 @@ public class InfoCommand {
         } else if (subject.isPresent()) {
             server = subject.get().server();
         } else {
-            user.send(Message.ERR_NOSUCHSERVER.parameters(user.info().format(), target));
+            user.send(Message.ERR_NOSUCHSERVER.client(user.info()).addFormat("server name", target));
             return;
         }
 
         for (String info : server.info()) {
-            user.send(Message.RPL_INFO.parameters(info));
+            user.send(Message.RPL_INFO.addFormat("string", info));
         }
         user.send(Message.RPL_ENDOFINFO);
     }

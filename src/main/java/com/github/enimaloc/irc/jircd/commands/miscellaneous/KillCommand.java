@@ -11,7 +11,7 @@ public class KillCommand {
     @Command
     public void execute(User user, String nickname, String reason) {
         if (!user.modes().oper() && !user.modes().localOper()) {
-            user.send(Message.ERR_NOPRIVILEGES.parameters(user.info().format()));
+            user.send(Message.ERR_NOPRIVILEGES.client(user.info()));
             return;
         }
         Optional<User> userOpt = user.server()

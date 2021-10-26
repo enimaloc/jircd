@@ -14,7 +14,7 @@ public class UserCommand {
             return;
         }
         if (user.state() == UserState.LOGGED) {
-            user.send(Message.ERR_ALREADYREGISTERED.parameters(user.info().format()));
+            user.send(Message.ERR_ALREADYREGISTERED.client(user.info()));
             return;
         }
         user.info().setUsername(username);

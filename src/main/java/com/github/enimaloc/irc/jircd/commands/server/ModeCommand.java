@@ -40,16 +40,18 @@ public class ModeCommand {
                                            .filter(channel -> channel.name().equals(target))
                                            .findFirst();
         if (channelOpt.isEmpty()) {
-            user.send(Message.ERR_NOSUCHCHANNEL.parameters(user.info().format(), target));
+            user.send(Message.ERR_NOSUCHCHANNEL.client(user.info()).addFormat("channel", target));
             return;
         }
         Channel channel = channelOpt.get();
         if (modeString == null) {
-            user.send(Message.RPL_CHANNELMODEIS.parameters(user.info().format(),
-                                                           target,
-                                                           channel.modes().modesString(),
-                                                           channel.modes().modesArguments()));
-            user.send(Message.RPL_CREATIONTIME.parameters(user.info().format(), target, channel.createAt()));
+            user.send(Message.RPL_CHANNELMODEIS.client(user.info())
+                                               .addFormat("channel", target)
+                                               .addFormat("modestring", channel.modes().modesString())
+                                               .addFormat("mode arguments", channel.modes().modesArguments()));
+            user.send(Message.RPL_CREATIONTIME.client(user.info())
+                                              .addFormat("channel", target)
+                                              .addFormat("creationtime", channel.createAt()));
             return;
         }
 
@@ -63,8 +65,10 @@ public class ModeCommand {
                 case 'b' -> {
                     if (empty) {
                         channel.modes().bans().forEach(
-                                mask -> user.send(Message.RPL_BANLIST.parameters(user.info().format(), target, mask)));
-                        user.send(Message.RPL_ENDOFBANLIST.parameters(user.info().format(), target));
+                                mask -> user.send(Message.RPL_BANLIST.client(user.info())
+                                                                     .addFormat("channel", target)
+                                                                     .addFormat("mask", mask)));
+                        user.send(Message.RPL_ENDOFBANLIST.client(user.info()).addFormat("channel", target));
                         return;
                     }
                     (add ? addC : remC).add(c);
@@ -73,8 +77,10 @@ public class ModeCommand {
                     if (empty) {
                         channel.modes().except().forEach(
                                 mask -> user.send(
-                                        Message.RPL_EXCEPTLIST.parameters(user.info().format(), target, mask)));
-                        user.send(Message.RPL_ENDOFEXCEPTLIST.parameters(user.info().format(), target));
+                                        Message.RPL_EXCEPTLIST.client(user.info())
+                                                              .addFormat("channel", target)
+                                                              .addFormat("mask", mask)));
+                        user.send(Message.RPL_ENDOFEXCEPTLIST.client(user.info()).addFormat("channel", target));
                         return;
                     }
                     (add ? addC : remC).add(c);
@@ -83,14 +89,16 @@ public class ModeCommand {
                     if (empty) {
                         channel.modes().invEx().forEach(
                                 mask -> user.send(
-                                        Message.RPL_INVITELIST.parameters(user.info().format(), target, mask)));
-                        user.send(Message.RPL_ENDOFINVITELIST.parameters(user.info().format(), target));
+                                        Message.RPL_INVITELIST.client(user.info())
+                                                              .addFormat("channel", target)
+                                                              .addFormat("mask", mask)));
+                        user.send(Message.RPL_ENDOFINVITELIST.client(user.info()).addFormat("", target));
                         return;
                     }
                     (add ? addC : remC).add(c);
                 }
                 case 'l', 'i', 'k', 'm', 's', 't', 'n' -> (add ? addC : remC).add(c);
-                default -> user.send(Message.ERR_UMODEUNKNOWNFLAG.parameters(user.info().format()));
+                default -> user.send(Message.ERR_UMODEUNKNOWNFLAG.client(user.info()));
             }
         }
         addC.forEach(char_ -> {
@@ -131,7 +139,7 @@ public class ModeCommand {
 
     private void executeUserMode(User user, String target, String modeString) {
         if (!user.info().format().equals(target)) {
-            user.send(Message.ERR_USERSDONTMATCH.parameters(user.info().format()));
+            user.send(Message.ERR_USERSDONTMATCH.client(user.info()));
             return;
         }
         if (modeString != null) {
@@ -144,10 +152,10 @@ public class ModeCommand {
                     case 'O' -> user.modes().localOper(false);
 //                    case 'r' -> user.modes().registered(add);
                     case 'w' -> user.modes().wallops(add);
-                    default -> user.send(Message.ERR_UMODEUNKNOWNFLAG.parameters(user.info().format()));
+                    default -> user.send(Message.ERR_UMODEUNKNOWNFLAG.client(user.info()));
                 }
             }
         }
-        user.send(Message.RPL_UMODEIS.parameters(user.info().format(), user.modes().modes()));
+        user.send(Message.RPL_UMODEIS.client(user.info()).addFormat("user modes", user.modes().modes()));
     }
 }

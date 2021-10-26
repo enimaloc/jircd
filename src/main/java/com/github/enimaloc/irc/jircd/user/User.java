@@ -152,7 +152,8 @@ public class User extends Thread {
             commandMap.keySet()
                       .stream()
                       .min(Comparator.comparingInt(Command.CommandIdentifier::parametersCount))
-                      .ifPresent(min -> send(Message.ERR_NEEDMOREPARAMS.parameters(info.format(), command)));
+                      .ifPresent(min -> send(Message.ERR_NEEDMOREPARAMS.addFormat("client", info.format())
+                                                                       .addFormat("command", command)));
             return;
         }
         Command.CommandIdentity cmd = commandMap.get(identifier);
@@ -176,11 +177,19 @@ public class User extends Thread {
 
     public void finishRegistration() {
         state = UserState.LOGGED;
-        String userInfo = info.format();
-        send(Message.RPL_WELCOME.parameters(userInfo, server.settings().networkName, userInfo));
-        send(Message.RPL_YOURHOST.parameters(userInfo, Constant.NAME, Constant.VERSION));
-        send(Message.RPL_CREATED.parameters(userInfo, server.createdAt(), server.createdAt()));
-        send(Message.RPL_MYINFO.parameters(userInfo, Constant.NAME, Constant.VERSION, "", ""));
+        send(Message.RPL_WELCOME.client(info)
+                                .addFormat("network", server.settings().networkName)
+                                .addFormat("nick", info.nickname()));
+        send(Message.RPL_YOURHOST.client(info)
+                                 .addFormat("servername", Constant.NAME)
+                                 .addFormat("version", Constant.VERSION));
+        send(Message.RPL_CREATED.client(info)
+                                .addFormat("datetime", String.format("%tD %tT", server.createdAt(), server.createdAt())));
+        send(Message.RPL_MYINFO.client(info)
+                               .addFormat("servername", Constant.NAME)
+                               .addFormat("version", Constant.VERSION)
+                               .addFormat("available user modes", "")
+                               .addFormat("available channel modes", ""));
         VersionCommand.send_ISUPPORT(this);
         try {
             process("MOTD");

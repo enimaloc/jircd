@@ -7,6 +7,8 @@ import com.github.enimaloc.irc.jircd.message.Regex;
 import com.github.enimaloc.irc.jircd.commands.Command;
 import com.github.enimaloc.irc.jircd.user.User;
 import java.lang.reflect.InvocationTargetException;
+import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Command(name = "join")
@@ -45,7 +47,7 @@ public class JoinCommand {
             String channel = channels[i];
             String passwd  = passwds[i];
             if (!Regex.CHANNEL.matcher(channel).matches()) {
-                user.send(Message.ERR_NOSUCHCHANNEL.parameters(user.info().format(), channel));
+                user.send(Message.ERR_NOSUCHCHANNEL.client(user.info()).addFormat("channel", channel));
                 continue;
             }
             Channel channelObj = user.server()
@@ -59,11 +61,11 @@ public class JoinCommand {
                                          return temp;
                                      });
             if (user.channels().size() >= user.server().supportAttribute().channelAttribute().channelLen()) {
-                user.send(Message.ERR_TOOMANYCHANNELS.parameters(user.info().format(), channel));
+                user.send(Message.ERR_TOOMANYCHANNELS.client(user.info()).addFormat("channel", channel));
                 continue;
             }
             if (channelObj.modes().password().isPresent() && !channelObj.modes().password().get().equals(passwd)) {
-                user.send(Message.ERR_BADCHANNELKEY.parameters(user.info().format(), channel));
+                user.send(Message.ERR_BADCHANNELKEY.client(user.info()).addFormat("channel", channel));
                 continue;
             }
             if (channelObj.modes()
@@ -74,33 +76,36 @@ public class JoinCommand {
                           .except()
                           .stream()
                           .noneMatch(mask -> new Mask(mask).toPattern().matcher(user.info().full()).matches())) {
-                user.send(Message.ERR_BANNEDFROMCHAN.parameters(user.info().format(), channel));
+                user.send(Message.ERR_BANNEDFROMCHAN.client(user.info()).addFormat("channel", channel));
                 continue;
             }
             if (channelObj.users().size() >= channelObj.modes().limit().orElse(Integer.MAX_VALUE)) {
-                user.send(Message.ERR_CHANNELISFULL.parameters(user.info().format(), channel));
+                user.send(Message.ERR_CHANNELISFULL.client(user.info()).addFormat("channel", channel));
                 continue;
             }
             if (channelObj.modes().inviteOnly()) {
-                user.send(Message.ERR_INVITEONLYCHAN.parameters(user.info().format(), channel));
+                user.send(Message.ERR_INVITEONLYCHAN.client(user.info()).addFormat("channel", channel));
                 continue;
             }
             user.modifiableChannels().add(channelObj);
             channelObj.modifiableUsers().add(user);
 
-            channelObj.broadcast(user.info().format(), Message.CMD_JOIN.parameters(channel));
+            channelObj.broadcast(user.info().format(), Message.CMD_JOIN.rawFormat(channel));
             channelObj.topic()
                       .ifPresent(topic -> user.send(
-                              Message.RPL_TOPIC.parameters(user.info().format(), channel, topic.topic())));
+                              Message.RPL_TOPIC.client(user.info())
+                                               .addFormat("channel", channel)
+                                               .addFormat("topic", topic.topic())));
 
-            user.send(Message.RPL_NAMREPLY.parameters(user.info().format(),
-                                                      channelObj.modes().secret() ? "@" : "=",
-                                                      channelObj.name(),
-                                                      channelObj.users().stream()
-                                                                .map(u -> channelObj.prefix(u) +
-                                                                          u.info().nickname())
-                                                                .collect(Collectors.joining(" "))));
-            user.send(Message.RPL_ENDOFNAMES.parameters(user.info().format(), channelObj.name()));
+            user.send(Message.RPL_NAMREPLY.client(user.info())
+                                          .addFormat("symbol", channelObj.modes().secret() ? "@" : "=")
+                                          .addFormat("channel", channelObj.name())
+                                          .addFormat("nicknames", channelObj.users()
+                                                                            .stream()
+                                                                            .map(u -> channelObj.prefix(u) +
+                                                                                      u.info().nickname())
+                                                                            .collect(Collectors.joining(" "))));
+            user.send(Message.RPL_ENDOFNAMES.client(user.info()).addFormat("channel", channelObj.name()));
         }
     }
 

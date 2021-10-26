@@ -38,14 +38,13 @@ public class NamesCommand {
                                           .filter(u -> !u.modes().invisible() || userIn)
                                           .map(u -> channel.prefix(u) + u.info().format())
                                           .collect(Collectors.joining(" "));
-                user.send(Message.RPL_NAMREPLY.parameters(user.info().format(),
-                                                          channel.modes().secret() ?
-                                                                  "@" :
-                                                                  channel.modes().password().isPresent() ? "*" : "=",
-                                                          channelName,
-                                                          nicknames));
+                user.send(Message.RPL_NAMREPLY.client(user.info())
+                                              .addFormat("symbol", channel.modes().secret() ? "@" :
+                                                      channel.modes().password().isPresent() ? "*" : "=")
+                                              .addFormat("channel", channelName)
+                                              .addFormat("nicknames", nicknames));
             }
-            user.send(Message.RPL_ENDOFNAMES.parameters(user.info().format(), channelName));
+            user.send(Message.RPL_ENDOFNAMES.client(user.info()).addFormat("channel", channelName));
         }
     }
 

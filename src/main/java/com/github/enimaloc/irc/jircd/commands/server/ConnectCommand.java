@@ -19,6 +19,8 @@ public class ConnectCommand {
 
     @Command
     public void execute(User user, String target, String port, String remote) {
-        user.send(Message.ERR_UNKNOWNERROR.parameters(user.info().format(), "CONNECT", "Not supported yet"));
+        user.send(Message.ERR_UNKNOWNERROR.client(user.info())
+                                          .addFormat("command", "CONNECT")
+                                          .addFormat("info", "Not supported yet"));
     }
 }

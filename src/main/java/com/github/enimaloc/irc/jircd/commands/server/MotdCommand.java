@@ -15,18 +15,18 @@ public class MotdCommand {
     @Command
     public void execute(User user, String server) {
         if (!user.server().settings().host.equals(server)) {
-            user.send(Message.ERR_NOSUCHSERVER.parameters(user.info().format(), server));
+            user.send(Message.ERR_NOSUCHSERVER.client(user.info()).addFormat("", server));
             return;
         }
         String[] motd = user.server().settings().motd;
         if (motd.length == 0) {
-            user.send(Message.ERR_NOMOTD.parameters(user.info().format()));
+            user.send(Message.ERR_NOMOTD.client(user.info()));
             return;
         }
-        user.send(Message.RPL_MOTDSTART.parameters(user.info().format(), server));
+        user.send(Message.RPL_MOTDSTART.client(user.info()).addFormat("server", server));
         for (String line : motd) {
-            user.send(Message.RPL_MOTD.parameters(user.info().format(), line));
+            user.send(Message.RPL_MOTD.client(user.info()).addFormat("line of the motd", line));
         }
-        user.send(Message.RPL_ENDOFMOTD.parameters(user.info().format()));
+        user.send(Message.RPL_ENDOFMOTD.client(user.info()));
     }
 }

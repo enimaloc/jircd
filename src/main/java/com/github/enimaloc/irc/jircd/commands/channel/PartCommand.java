@@ -25,7 +25,7 @@ public class PartCommand {
         }
         for (String channelName : channelsNames) {
             if (!Regex.CHANNEL.matcher(channelName).matches()) {
-                user.send(Message.ERR_NOSUCHCHANNEL.parameters(user.info().format(), channelName));
+                user.send(Message.ERR_NOSUCHCHANNEL.client(user.info()).addFormat("channel", channelName));
                 continue;
             }
             Optional<Channel> channelOpt = user.channels()
@@ -33,7 +33,7 @@ public class PartCommand {
                                                .filter(channel -> channel.name().equals(channelName))
                                                .findFirst();
             if (channelOpt.isEmpty()) {
-                user.send(Message.ERR_NOTONCHANNEL.parameters(user.info().format(), channelName));
+                user.send(Message.ERR_NOTONCHANNEL.client(user.info()).addFormat("channel", channelName));
                 continue;
             }
             Channel channelObj = channelOpt.get();

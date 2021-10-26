@@ -40,7 +40,7 @@ public class PrivmsgCommand {
                                            .filter(c -> c.name().equals(targetWithoutPrefix))
                                            .findFirst();
         if (channelOpt.isEmpty()) {
-            user.send(Message.ERR_CANNOTSENDTOCHAN.parameters(user.info().format(), targetWithoutPrefix));
+            user.send(Message.ERR_CANNOTSENDTOCHAN.client(user.info()).addFormat("channel", targetWithoutPrefix));
             return;
         }
         Channel channel = channelOpt.get();
@@ -52,7 +52,7 @@ public class PrivmsgCommand {
                                                                                .matches())) ||
             (channel.modes().noExternalMessage() && !channel.users().contains(user)) ||
             (channel.modes().moderate() && !Regex.CHANNEL_PREFIX.matcher(channel.prefix(user)).matches())) {
-            user.send(Message.ERR_CANNOTSENDTOCHAN.parameters(user.info().format(), targetWithoutPrefix));
+            user.send(Message.ERR_CANNOTSENDTOCHAN.client(user.info()).addFormat("channel", targetWithoutPrefix));
             return;
         }
         Predicate<User> filter = u -> u != user;
@@ -87,12 +87,14 @@ public class PrivmsgCommand {
                                        .filter(u -> u.info().format().equals(target))
                                        .findFirst();
         if (targetOpt.isEmpty()) {
-            user.send(Message.ERR_NOSUCHNICK.parameters(user.info().format(), target));
+            user.send(Message.ERR_NOSUCHNICK.client(user.info()).addFormat("nickname", target));
             return;
         }
         User targetObj = targetOpt.get();
         if (targetObj.away().isPresent()) {
-            user.send(Message.RPL_AWAY.parameters(user.info().format(), target, targetObj.away().get()));
+            user.send(Message.RPL_AWAY.client(user.info())
+                                      .addFormat("nick", target)
+                                      .addFormat("message", targetObj.away().get()));
         }
         targetObj.send(":" + user.info().format() + " PRIVMSG " + target + " :" + trailing);
     }

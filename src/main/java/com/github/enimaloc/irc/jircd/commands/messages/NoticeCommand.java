@@ -88,7 +88,9 @@ public class NoticeCommand {
         }
         User targetObj = targetOpt.get();
         if (targetObj.away().isPresent()) {
-            user.send(Message.RPL_AWAY.parameters(user.info().format(), target, targetObj.away().get()));
+            user.send(Message.RPL_AWAY.client(user.info())
+                                      .addFormat("nick", target)
+                                      .addFormat("message", targetObj.away().get()));
         }
         targetObj.send(":" + user.info().format() + " NOTICE " + target + " :" + trailing);
     }

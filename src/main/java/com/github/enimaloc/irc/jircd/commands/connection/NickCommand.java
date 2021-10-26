@@ -18,12 +18,12 @@ public class NickCommand {
         ServerSettings settings = user.server().settings();
         if (!nickname.matches(Regex.NICKNAME.pattern()) ||
             (settings.unsafeNickname.contains(nickname) && !settings.safeNet.contains(user.info().host()))) {
-            user.send(Message.ERR_ERRONEUSNICKNAME.parameters(user.info().format(), nickname));
+            user.send(Message.ERR_ERRONEUSNICKNAME.client(user.info()).addFormat("nick", nickname));
             return;
         }
         if (user.server().users().stream().anyMatch(
                 u -> u.info().nickname() != null && u.info().nickname().equals(nickname))) {
-            user.send(Message.ERR_NICKNAMEINUSE.parameters(user.info().format(), nickname));
+            user.send(Message.ERR_NICKNAMEINUSE.client(user.info()).addFormat("nick", nickname));
             return;
         }
         if (user.state() == UserState.LOGGED) {

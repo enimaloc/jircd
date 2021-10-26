@@ -29,13 +29,13 @@ public class AdminCommand {
         } else if (subject.isPresent()) {
             server = subject.get().server();
         } else {
-            user.send(Message.ERR_NOSUCHSERVER.parameters(user.info().format(), target));
+            user.send(Message.ERR_NOSUCHSERVER.client(user.info()).addFormat("server name", target));
             return;
         }
 
-        user.send(Message.RPL_ADMINME.parameters(user.info().format(), server.settings().host));
-        user.send(Message.RPL_ADMINLOC1.parameters(user.info().format(), server.settings().admin.loc1()));
-        user.send(Message.RPL_ADMINLOC2.parameters(user.info().format(), server.settings().admin.loc2()));
-        user.send(Message.RPL_ADMINEMAIL.parameters(user.info().format(), server.settings().admin.email()));
+        user.send(Message.RPL_ADMINME.client(user.info()).addFormat("server", server.settings().host));
+        user.send(Message.RPL_ADMINLOC1.client(user.info()).addFormat("info", server.settings().admin.loc1()));
+        user.send(Message.RPL_ADMINLOC2.client(user.info()).addFormat("info", server.settings().admin.loc2()));
+        user.send(Message.RPL_ADMINEMAIL.client(user.info()).addFormat("info", server.settings().admin.email()));
     }
 }

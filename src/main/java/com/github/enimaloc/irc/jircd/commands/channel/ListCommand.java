@@ -92,21 +92,21 @@ public class ListCommand {
         } else {
             channels = new String[]{channelsRaw};
         }
-        user.send(Message.RPL_LISTSTART.parameters(user.info().format()));
+        user.send(Message.RPL_LISTSTART.client(user.info()));
         for (String channelName : channels) {
             user.server()
                 .channels()
                 .stream()
                 .filter(predicate.and(channel -> new Mask("*"+channelName+"*").toPattern().matcher(channel.name()).matches()))
-                .map(channel -> Message.RPL_LIST.parameters(user.info().format(),
-                                                            channel.name(),
-                                                            channel.users().size(),
-                                                            channel.topic()
-                                                                   .orElse(new Channel.Topic("", null))
-                                                                   .topic()))
+                .map(channel -> Message.RPL_LIST.client(user.info())
+                                                .addFormat("channel", channel.name())
+                                                .addFormat("client count", channel.users().size())
+                                                .addFormat("topic", channel.topic()
+                                                                           .orElse(new Channel.Topic("", null))
+                                                                           .topic()))
                 .forEach(user::send);
         }
-        user.send(Message.RPL_LISTEND.parameters(user.info().format()));
+        user.send(Message.RPL_LISTEND.client(user.info()));
     }
 
 }
