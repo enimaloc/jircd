@@ -13,6 +13,8 @@ import java.net.BindException;
 import java.net.Socket;
 import java.net.SocketTimeoutException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
@@ -562,11 +564,8 @@ class ServerTest {
 
             @FullModuleTest
             void fullConnectionWithMOTDTest() throws IOException {
-                File tempFile = File.createTempFile("motd", "txt");
-                tempFile.deleteOnExit();
-                FileWriter writer = new FileWriter(tempFile);
-                writer.write("Custom motd set in temp file");
-                writer.close();
+                Path tempFile = Files.createTempFile("motd", ".txt");
+                Files.writeString(tempFile, "Custom motd set in temp file");
 
                 setSettings(baseSettings.copy(new ServerSettings(tempFile), field -> !field.getName().equals("motd")));
 
@@ -1768,32 +1767,28 @@ class ServerTest {
                     connections[1].send("LIST #[0-9]*");
                     assertArrayEquals(new String[]{
                             ":jircd-host 321 john Channel :Users  Name",
-                            ":jircd-host 322 john #42 1 :",
                             ":jircd-host 323 john :End of /LIST"
-                    }, connections[1].awaitMessage(3));
+                    }, connections[1].awaitMessage(2));
 
                     connections[1].send("LIST #[0-9][abc]{3}[0-9]");
                     assertArrayEquals(new String[]{
                             ":jircd-host 321 john Channel :Users  Name",
-                            ":jircd-host 322 john #1abc2 1 :",
                             ":jircd-host 323 john :End of /LIST"
-                    }, connections[1].awaitMessage(3));
+                    }, connections[1].awaitMessage(2));
 
                     connections[1].send("LIST #[a-z]*");
                     assertArrayEquals(new String[]{
                             ":jircd-host 321 john Channel :Users  Name",
-                            ":jircd-host 322 john #azerty 1 :",
                             ":jircd-host 323 john :End of /LIST"
-                    }, connections[1].awaitMessage(3));
+                    }, connections[1].awaitMessage(2));
 
                     connections[1].send("LIST #[A-Z]*");
                     assertArrayEquals(new String[]{
                             ":jircd-host 321 john Channel :Users  Name",
-                            ":jircd-host 322 john #AZERTY 1 :",
                             ":jircd-host 323 john :End of /LIST"
-                    }, connections[1].awaitMessage(3));
+                    }, connections[1].awaitMessage(2));
 
-                    connections[1].send("LIST #.*");
+                    connections[1].send("LIST #*");
                     assertArrayEquals(new String[]{
                             ":jircd-host 321 john Channel :Users  Name",
                             ":jircd-host 322 john #42 1 :",
@@ -1806,8 +1801,20 @@ class ServerTest {
                     connections[1].send("LIST #");
                     assertArrayEquals(new String[]{
                             ":jircd-host 321 john Channel :Users  Name",
+                            ":jircd-host 322 john #42 1 :",
+                            ":jircd-host 322 john #azerty 1 :",
+                            ":jircd-host 322 john #AZERTY 1 :",
+                            ":jircd-host 322 john #1abc2 1 :",
                             ":jircd-host 323 john :End of /LIST"
-                    }, connections[1].awaitMessage(2));
+                    }, connections[1].awaitMessage(6));
+
+                    connections[1].send("LIST 2");
+                    assertArrayEquals(new String[]{
+                            ":jircd-host 321 john Channel :Users  Name",
+                            ":jircd-host 322 john #42 1 :",
+                            ":jircd-host 322 john #1abc2 1 :",
+                            ":jircd-host 323 john :End of /LIST"
+                    }, connections[1].awaitMessage(4));
                 }
             }
         }
@@ -1847,11 +1854,8 @@ class ServerTest {
 
                 @Test
                 void motdTest() throws IOException {
-                    File tempFile = File.createTempFile("motd", "txt");
-                    tempFile.deleteOnExit();
-                    FileWriter writer = new FileWriter(tempFile);
-                    writer.write("Custom motd set in temp file");
-                    writer.close();
+                    Path tempFile = Files.createTempFile("motd", ".txt");
+                    Files.writeString(tempFile, "Custom motd set in temp file");
 
                     setSettings(
                             baseSettings.copy(new ServerSettings(tempFile), field -> !field.getName().equals("motd")));

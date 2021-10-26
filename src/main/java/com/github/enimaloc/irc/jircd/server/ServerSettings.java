@@ -8,6 +8,7 @@ import java.lang.reflect.Field;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.*;
 import java.util.function.Predicate;
 import org.slf4j.Logger;
@@ -30,17 +31,17 @@ public class ServerSettings {
     public transient String[]       motd;
 
     public ServerSettings() {
-        this(new File("motd.txt"));
+        this(Path.of("motd.txt"));
     }
 
-    public ServerSettings(File motdFile) {
+    public ServerSettings(Path motdFile) {
         try {
             host = InetAddress.getLocalHost().getHostAddress();
         } catch (UnknownHostException e) {
             logger.error(e.getLocalizedMessage(), e);
         }
         try {
-            motd = motdFile.exists() ? Files.readAllLines(motdFile.toPath()).toArray(String[]::new) : new String[0];
+            motd = Files.exists(motdFile) ? Files.readAllLines(motdFile).toArray(String[]::new) : new String[0];
         } catch (IOException e) {
             logger.error(e.getLocalizedMessage(), e);
         }
@@ -68,8 +69,8 @@ public class ServerSettings {
         return to;
     }
 
-    public void saveAs(File file) {
-        FileConfig settings = FileConfig.of(file);
+    public void saveAs(Path path) {
+        FileConfig settings = FileConfig.of(path);
         new ObjectConverter().toConfig(this, settings);
         settings.save();
         settings.close();
