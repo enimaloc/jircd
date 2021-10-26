@@ -39,3 +39,8 @@ All pull requests which do not respect the conventions above will be considered 
 - Undocumented ([RFC 2812](https://datatracker.ietf.org/doc/html/rfc2812))
   - [Miscellaneous](https://datatracker.ietf.org/doc/html/rfc2812#section-3.7) ([c58bb0c](https://github.com/enimaloc/jircd/commit/c58bb0c1fde1d16c240a81fb25cb27f27f50c8e9))
     - [Ping](https://datatracker.ietf.org/doc/html/rfc2812#section-3.7.2)
+
+## License
+
+The source code for the site is licensed under the MIT license, which you can find in
+the [LICENSE](LICENCE) file.
