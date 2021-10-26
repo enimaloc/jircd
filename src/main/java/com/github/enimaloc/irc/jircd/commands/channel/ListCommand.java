@@ -27,14 +27,7 @@ public class ListCommand {
     public void execute(User user, String raw) {
         if (raw.startsWith("C<") || raw.startsWith("C>") ||
             raw.startsWith("T<") || raw.startsWith("T>") ||
-            raw.startsWith("<") || raw.startsWith(">") ||
-            user.server()
-                .channels()
-                .stream()
-                .map(Channel::name)
-                .noneMatch(name -> Arrays.stream((raw + ",").split(","))
-                                         .toList()
-                                         .contains(name))
+            raw.startsWith("<") || raw.startsWith(">")
         ) {
             executeWithEList(user, raw);
         } else {
