@@ -28,6 +28,7 @@ import org.junit.jupiter.api.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import utils.FullModuleTest;
+import utils.ListUtils;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.junit.jupiter.api.Assumptions.assumeFalse;
@@ -779,6 +780,35 @@ class ServerTest {
                     assertArrayEquals(new String[]{
                             ":jircd-host 433 @127.0.0.1 dup :Nickname is already in use"
                     }, connections[1].awaitMessage());
+                }
+
+                @Test
+                void unsafeNickWithSafenetTest() throws InterruptedException {
+                    connections[0].send("PASS " + baseSettings.pass);
+                    String nick = ListUtils.getRandom(baseSettings.unsafeNickname);
+                    connections[0].send("NICK " + nick);
+                    Thread.sleep(TIMEOUT_BETWEEN_COMMUNICATION);
+
+                    UserInfo info = server.users().get(0).info();
+                    assertTrue(info.passwordValid());
+                    assertEquals(nick, info.nickname());
+                    assertArrayEquals(EMPTY_ARRAY, connections[0].awaitMessage());
+                }
+
+                @Test
+                void unsafeNickWithUnsafenetTest() throws InterruptedException {
+                    connections[0].send("PASS " + baseSettings.pass);
+                    Thread.sleep(TIMEOUT_BETWEEN_COMMUNICATION);
+                    String nick = ListUtils.getRandom(baseSettings.unsafeNickname);
+
+                    UserInfo info = server.users().get(0).info();
+                    info.setHost("255.255.255.255");
+
+                    connections[0].send("NICK " + nick);
+                    assertArrayEquals(new String[]{
+                            ":jircd-host 432 @255.255.255.255 " + nick + " :Erroneus nickname"
+                    }, connections[0].awaitMessage());
+                    assertNull(info.nickname());
                 }
             }
 

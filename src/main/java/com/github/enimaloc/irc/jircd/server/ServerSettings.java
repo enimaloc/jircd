@@ -33,6 +33,18 @@ public class ServerSettings {
     public           List<Operator> operators      = new ArrayList<>(List.of(
             new Operator("oper", "oper")
     ));
+    public           List<String>   unsafeNickname = new ArrayList<>(List.of(
+            // RFC
+            "anonymous",
+            // anope services
+            "ChanServ",
+            "NickServ",
+            "OperServ",
+            "MemoServ",
+            "HostServ",
+            "BotServ"
+    ));
+    public           List<String>   safeNet        = new ArrayList<>(List.of("::1", "127.0.0.1", "localhost"));
     public transient String[]       motd;
 
     public ServerSettings() {
