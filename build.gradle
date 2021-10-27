@@ -4,7 +4,7 @@ plugins {
 }
 
 group 'com.github.enimaloc'
-version '1.0-SNAPSHOT'
+version new File("version.txt").text
 
 repositories {
     mavenCentral()
