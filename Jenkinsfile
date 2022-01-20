@@ -1,12 +1,19 @@
-node {
-  stage('SCM') {
-    checkout scm
+pipeline {
+  agent {
+    docker {
+      image 'gradle:jdk17'
+      label 'gradle'
+      reuseNode true
+    }
   }
-  stage('SonarQube Analysis') {
-      withDockerContainer('gradle:jdk17') {
-        withSonarQubeEnv() {
-            sh "./gradlew sonarqube"
-        }
+  stages {
+    stage('SCM') {
+      checkout scm
+    }
+    stage('SonarQube Analysis') {
+      withSonarQubeEnv() {
+        sh "./gradlew sonarqube"
       }
+    }
   }
 }
