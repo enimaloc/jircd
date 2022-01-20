@@ -1,13 +1,13 @@
-node {
-  stage('SCM') {
-    checkout scm
-  }
-  stage('SonarQube Analysis') {
-    tools {
-       jdk "jdk-17"
+pipeline {
+    agent { docker 'gradle:jdk17' }
+    stages {
+      stage('SCM') {
+        checkout scm
+      }
+      stage('SonarQube Analysis') {
+        withSonarQubeEnv() {
+          sh "./gradlew sonarqube"
+        }
+      }
     }
-    withSonarQubeEnv() {
-      sh "./gradlew sonarqube"
-    }
-  }
 }
