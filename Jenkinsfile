@@ -1,13 +1,12 @@
-pipeline {
-    agent { docker 'gradle:jdk17' }
-    stages {
-      stage('SCM') {
-        checkout scm
-      }
-      stage('SonarQube Analysis') {
+node {
+  stage('SCM') {
+    checkout scm
+  }
+  stage('SonarQube Analysis') {
+      withDockerContainer('gradle:jdk17') {
         withSonarQubeEnv() {
-          sh "./gradlew sonarqube"
+            sh "./gradlew sonarqube"
         }
       }
-    }
+  }
 }
