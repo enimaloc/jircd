@@ -69,6 +69,7 @@ public class UserInfo {
 
     public void setOper(ServerSettings.Operator oper) {
         this.oper = oper;
+        this.user.modes().oper(oper != null);
     }
 
     public String format() {
