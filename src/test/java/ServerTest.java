@@ -13,6 +13,7 @@ import java.lang.reflect.ParameterizedType;
 import java.net.BindException;
 import java.net.Socket;
 import java.net.SocketTimeoutException;
+import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -401,19 +402,31 @@ class ServerTest {
         }
 
         private String getRandomString(int length) {
-            return getRandomString(length, i -> (i <= 57 || i >= 65) && (i <= 90 || i >= 97));
+            return getRandomString(length, Charset.defaultCharset());
+        }
+
+        private String getRandomString(int length, Charset charset) {
+            return getRandomString(length, i -> (i <= 57 || i >= 65) && (i <= 90 || i >= 97), charset);
         }
 
         private String getRandomString(int length, IntPredicate filter) {
-            return getRandomString(length, 48, 123, filter);
+            return getRandomString(length, filter, Charset.defaultCharset());
+        }
+
+        private String getRandomString(int length, IntPredicate filter, Charset charset) {
+            return getRandomString(length, 48, 123, filter, charset);
         }
 
         private String getRandomString(int length, int origin, int bound, IntPredicate filter) {
-            return new Random().ints(origin, bound)
+            return getRandomString(length, origin, bound, filter, Charset.defaultCharset());
+        }
+
+        private String getRandomString(int length, int origin, int bound, IntPredicate filter, Charset charset) {
+            return new String(new Random().ints(origin, bound)
                                .filter(filter)
                                .limit(length)
                                .collect(StringBuilder::new, StringBuilder::appendCodePoint, StringBuilder::append)
-                               .toString();
+                               .toString().getBytes(), charset);
         }
 
         record Connection(Socket socket, BufferedReader input, PrintStream output) {
@@ -1235,7 +1248,7 @@ class ServerTest {
 
                 @Test
                 void joinInvalidChannelNameTest() {
-                    String channelName = "#" + getRandomString(7, 128, 255, i -> true);
+                    String channelName = "#" + getRandomString(7, 128, 255, i -> true, StandardCharsets.ISO_8859_1);
                     connections[0].send("JOIN " + channelName);
                     assertArrayEquals(new String[]{
                             ":jircd-host 403 bob %s :No such channel".formatted(channelName)
@@ -1457,7 +1470,7 @@ class ServerTest {
 
                 @Test
                 void partInvalidChannelNameTest() {
-                    String channelName = getRandomString(7, 128, 255, i -> true);
+                    String channelName = getRandomString(7, 128, 255, i -> true, StandardCharsets.ISO_8859_1);
                     connections[0].send("PART " + channelName);
                     assertArrayEquals(new String[]{
                             ":jircd-host 403 bob %s :No such channel".formatted(channelName)
@@ -1531,7 +1544,7 @@ class ServerTest {
 
                 @Test
                 void topicIncorrectChannelNameTest() {
-                    String channelName = "#" + getRandomString(7, 128, 255, i -> true);
+                    String channelName = "#" + getRandomString(7, 128, 255, i -> true, StandardCharsets.ISO_8859_1);
                     connections[0].send("TOPIC " + channelName);
                     assertArrayEquals(new String[]{
                             ":jircd-host 403 bob %s :No such channel".formatted(channelName)
