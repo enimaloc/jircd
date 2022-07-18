@@ -58,6 +58,10 @@ class ServerTest {
         baseSettings.networkName = "JIRCD";
         baseSettings.pass        = "jircd-pass";
         baseSettings.pingTimeout = TimeUnit.DAYS.toMillis(1);
+        baseSettings.operators = new ArrayList<>(List.of(
+                new ServerSettings.Operator("oper", "*", "oper"),
+                new ServerSettings.Operator("googleOper", "google", "pass")
+        ));
 
         logger.info("Creating server with settings: {}", baseSettings);
         boolean retry = true;
@@ -868,6 +872,15 @@ class ServerTest {
                     connections[0].send("OPER");
                     assertArrayEquals(new String[]{
                             ":jircd-host 461 @127.0.0.1 OPER :Not enough parameters"
+                    }, connections[0].awaitMessage());
+                }
+
+                @Test
+                void incorrectOperHostTest() {
+                    connections[0].send("OPER " + baseSettings.operators.get(1).username() + " " +
+                                        baseSettings.operators.get(1).password());
+                    assertArrayEquals(new String[]{
+                            ":jircd-host 491 @127.0.0.1 :No O-lines for your host"
                     }, connections[0].awaitMessage());
                 }
             }

@@ -2,6 +2,7 @@ package fr.enimaloc.jircd.server;
 
 import com.electronwill.nightconfig.core.conversion.ObjectConverter;
 import com.electronwill.nightconfig.core.file.FileConfig;
+import fr.enimaloc.jircd.message.Mask;
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
@@ -9,7 +10,9 @@ import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.function.Predicate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -30,7 +33,7 @@ public class ServerSettings {
             "administrators@jircd.local"
     );
     public           List<Operator> operators      = new ArrayList<>(List.of(
-            new Operator("oper", "oper")
+            new Operator("oper", "*", "oper")
     ));
     public           List<String>   unsafeNickname = new ArrayList<>(List.of(
             // RFC
@@ -94,18 +97,24 @@ public class ServerSettings {
 
     public static class Operator {
         private String username;
+        private String host;
         private String password;
 
         public Operator() {
         }
 
-        private Operator(String username, String password) {
+        public Operator(String username, String host, String password) {
             this.username = username;
+            this.host = host;
             this.password = password;
         }
 
         public String username() {
             return username;
+        }
+
+        public Mask host() {
+            return new Mask(host);
         }
 
         public String password() {

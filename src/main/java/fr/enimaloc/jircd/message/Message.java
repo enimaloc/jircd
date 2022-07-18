@@ -145,6 +145,8 @@ public class Message {
             new Message(":<source> 481 <client> :Permission Denied- You're not an IRC operator");
     public static final Message ERR_CHANOPRIVSNEEDED  =
             new Message(":<source> 482 <client> <channel> :You're not channel operator");
+    public static final Message ERR_NOOPERHOST        =
+            new Message(":<source> 491 <client> :No O-lines for your host");
     public static final Message ERR_UMODEUNKNOWNFLAG  =
             new Message(":<source> 501 <client> :Unknown MODE flag");
     public static final Message ERR_USERSDONTMATCH    =
