@@ -1,6 +1,6 @@
 package fr.enimaloc.jircd.user;
 
-import fr.enimaloc.jircd.*;
+import fr.enimaloc.jircd.Constant;
 import fr.enimaloc.jircd.channel.Channel;
 import fr.enimaloc.jircd.commands.Command;
 import fr.enimaloc.jircd.commands.server.VersionCommand;
