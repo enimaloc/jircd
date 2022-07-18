@@ -45,11 +45,7 @@ public class PartCommand {
                                                       "" :
                                                       " :" + reason)
             );
-            user.modifiableChannels().remove(channelObj);
-            channelObj.modifiableUsers().remove(user);
-            if (channelObj.users().isEmpty()) {
-                user.server().originalChannels().remove(channelObj);
-            }
+            channelObj.removeUser(user);
         }
     }
 }

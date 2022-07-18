@@ -85,25 +85,8 @@ public class JoinCommand {
                 user.send(Message.ERR_INVITEONLYCHAN.client(user.info()).addFormat("channel", channel));
                 continue;
             }
-            user.modifiableChannels().add(channelObj);
-            channelObj.modifiableUsers().add(user);
 
-            channelObj.broadcast(user.info().format(), Message.CMD_JOIN.rawFormat(channel));
-            channelObj.topic()
-                      .ifPresent(topic -> user.send(
-                              Message.RPL_TOPIC.client(user.info())
-                                               .addFormat("channel", channel)
-                                               .addFormat("topic", topic.topic())));
-
-            user.send(Message.RPL_NAMREPLY.client(user.info())
-                                          .addFormat("symbol", channelObj.modes().secret() ? "@" : "=")
-                                          .addFormat("channel", channelObj.name())
-                                          .addFormat("nicknames", channelObj.users()
-                                                                            .stream()
-                                                                            .map(u -> channelObj.prefix(u) +
-                                                                                      u.info().nickname())
-                                                                            .collect(Collectors.joining(" "))));
-            user.send(Message.RPL_ENDOFNAMES.client(user.info()).addFormat("channel", channelObj.name()));
+            channelObj.addUser(user);
         }
     }
 
