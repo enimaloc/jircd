@@ -46,6 +46,16 @@ public class Message {
             new Message(":<source> 243 O <hostmask> * <name>");
     public static final Message RPL_STATSHLINE      =
             new Message(":<source> 244 H <hostmask> * <servername>");
+    public static final Message RPL_LUSERCLIENT     =
+            new Message(":<source> 251 <client> :There are <u> users and <i> invisibles on <s> servers");
+    public static final Message RPL_LUSEROP         =
+            new Message(":<source> 252 <client> <ops> :operator(s) online");
+    public static final Message RPL_LUSERUNKNOWN    =
+            new Message(":<source> 253 <client> <connections> :unknown connection(s)");
+    public static final Message RPL_LUSERCHANNELS   =
+            new Message(":<source> 254 <client> <channels> :channels formed");
+    public static final Message RPL_LUSERME         =
+            new Message(":<source> 255 <client> :I have <u> clients and <s> servers");
     public static final Message RPL_ADMINME         =
             new Message(":<source> 256 <client> <server> :Administrative info");
     public static final Message RPL_ADMINLOC1       =
