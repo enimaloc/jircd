@@ -151,8 +151,10 @@ public class Message {
             new Message(":<source> 491 <client> :No O-lines for your host");
     public static final Message ERR_UMODEUNKNOWNFLAG  =
             new Message(":<source> 501 <client> :Unknown MODE flag");
-    public static final Message ERR_USERSDONTMATCH    =
+    public static final Message ERR_USERSDONTMATCH =
             new Message(":<source> 502 <client> :Cant change mode for other users");
+    public static final Message ERR_HELPNOTFOUND   =
+            new Message(":<source> 524 <client> <subject> :No help available on this topic");
 
     private final String                            base;
     private final boolean                           haveTrailing;

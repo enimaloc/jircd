@@ -2310,6 +2310,7 @@ addConnections(1);
                     assertArrayEquals(new String[]{
                             ":jircd-host 212 ADMIN 0",
                             ":jircd-host 212 CONNECT 0",
+                            ":jircd-host 212 HELP 0",
                             ":jircd-host 212 INFO 0",
                             ":jircd-host 212 JOIN 0",
                             ":jircd-host 212 KICK 0",
@@ -2333,7 +2334,7 @@ addConnections(1);
                             ":jircd-host 212 USERHOST 0",
                             ":jircd-host 212 VERSION 0",
                             ":jircd-host 219 M :End of /STATS report"
-                    }, connections[0].awaitMessage(25));
+                    }, connections[0].awaitMessage(26));
                 }
 
                 @Test
@@ -2360,6 +2361,26 @@ addConnections(1);
                 @Disabled("No completed")
                 void statsYTest() {
                     connections[0].send("STATS y");
+                }
+            }
+
+            @Nested
+            class HelpCommand {
+
+                @Test
+                void helpNoSubjectTest() {
+                    connections[0].send("HELP");
+                    assertArrayEquals(new String[]{
+                            ":jircd-host 524 bob :No help available on this topic",
+                    }, connections[0].awaitMessage());
+                }
+
+                @Test
+                void helpTest() {
+                    connections[0].send("HELP subject");
+                    assertArrayEquals(new String[]{
+                            ":jircd-host 524 bob subject :No help available on this topic",
+                    }, connections[0].awaitMessage());
                 }
             }
 

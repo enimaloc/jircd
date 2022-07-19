@@ -59,6 +59,7 @@ public class JIRCD extends Thread {
                 new ConnectCommand(),
                 new TimeCommand(),
                 new StatsCommand(),
+                new HelpCommand(),
                 new InfoCommand(),
                 new ModeCommand(),
 
