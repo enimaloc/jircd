@@ -64,12 +64,16 @@ public class PrivmsgCommand {
                 switch (c) {
                     case '+':
                         builder.append("+");
+                        // fallthrough
                     case '%':
                         builder.append("%");
+                        // fallthrough
                     case '@':
                         builder.append("@");
+                        // fallthrough
                     case '&':
                         builder.append("&");
+                        // fallthrough
                     case '~':
                         builder.append("~");
                 }

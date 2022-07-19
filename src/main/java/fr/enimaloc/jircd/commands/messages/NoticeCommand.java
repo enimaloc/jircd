@@ -62,12 +62,16 @@ public class NoticeCommand {
                 switch (c) {
                     case '+':
                         builder.append("+");
+                        // fallthrough
                     case '%':
                         builder.append("%");
+                        // fallthrough
                     case '@':
                         builder.append("@");
+                        // fallthrough
                     case '&':
                         builder.append("&");
+                        // fallthrough
                     case '~':
                         builder.append("~");
                 }
