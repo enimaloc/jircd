@@ -1457,7 +1457,7 @@ class ServerTest {
                                                           .collect(Collectors.joining(",")));
                     assertArrayEquals(channels.stream().map(c -> ":john PART " + c.name()).toArray(),
                                       connections[1].awaitMessage(channels.size()));
-                    assertTrue(server.users().get(1).channels().isEmpty());
+                    assertTrue(waitFor(() -> server.users().get(1).channels().isEmpty()));
                 }
 
                 @Test
@@ -1875,6 +1875,157 @@ class ServerTest {
                     }, connections[1].awaitMessage(4));
                 }
             }
+
+            @Nested
+            class KickCommand {
+
+                @Test
+                void kickTest() {
+                    addConnections(1);
+
+                    connections[0].send("JOIN #jircd");
+                    connections[0].ignoreMessage(3);
+
+                    Optional<Channel> channelOpt = getChannel("#jircd");
+                    assertFalse(channelOpt.isEmpty());
+                    Channel channel = channelOpt.get();
+
+                    connections[1].createUser("fred", "Fred Bloggs");
+                    connections[1].send("JOIN #jircd");
+                    connections[1].ignoreMessage(3);
+                    connections[0].ignoreMessage();
+
+                    assumeTrue(channel.users().size() == 2);
+
+                    connections[0].send("KICK #jircd fred");
+                    assertArrayEquals(new String[]{
+                            ":bob KICK #jircd fred :Kicked by bob"
+                    }, connections[0].awaitMessage());
+
+                    assertArrayEquals(new String[]{
+                            ":bob KICK #jircd fred :Kicked by bob"
+                    }, connections[1].awaitMessage());
+
+                    assertTrue(waitFor(() -> channel.users().size() == 1, 1, TimeUnit.MINUTES));
+                }
+
+                @Test
+                void kickReasonTest() {
+addConnections(1);
+
+                    connections[0].send("JOIN #jircd");
+                    connections[0].ignoreMessage(3);
+
+                    Optional<Channel> channelOpt = getChannel("#jircd");
+                    assertFalse(channelOpt.isEmpty());
+                    Channel channel = channelOpt.get();
+
+                    connections[1].createUser("fred", "Fred Bloggs");
+                    connections[1].send("JOIN #jircd");
+                    connections[1].ignoreMessage(3);
+                    connections[0].ignoreMessage();
+
+                    assumeTrue(channel.users().size() == 2);
+
+                    connections[0].send("KICK #jircd fred :test");
+                    assertArrayEquals(new String[]{
+                            ":bob KICK #jircd fred :test"
+                    }, connections[0].awaitMessage());
+
+                    assertArrayEquals(new String[]{
+                            ":bob KICK #jircd fred :test"
+                    }, connections[1].awaitMessage());
+
+                    assertTrue(waitFor(() -> channel.users().size() == 1, 1, TimeUnit.MINUTES));
+                }
+
+                @Test
+                void kickNoPrivsTest() {
+                    addConnections(1);
+
+                    connections[0].send("JOIN #jircd");
+                    connections[0].ignoreMessage(3);
+
+                    Optional<Channel> channelOpt = getChannel("#jircd");
+                    assertFalse(channelOpt.isEmpty());
+                    Channel channel = channelOpt.get();
+
+                    connections[1].createUser("fred", "Fred Bloggs");
+                    connections[1].send("JOIN #jircd");
+                    connections[1].ignoreMessage(3);
+                    connections[0].ignoreMessage();
+
+                    assumeTrue(channel.users().size() == 2);
+
+                    connections[1].send("KICK #jircd bob");
+                    assertArrayEquals(new String[]{
+                            ":jircd-host 482 fred #jircd :You're not channel operator"
+                    }, connections[1].awaitMessage());
+
+                    assertEquals(2, channel.users().size());
+                }
+
+                @Test
+                void kickNoChannelTest() {
+                    String channel = "#" + getRandomString(7, 128, 255, i -> true, StandardCharsets.ISO_8859_1);
+                    connections[0].send("KICK "+channel+" fred");
+                    assertArrayEquals(new String[]{
+                            ":jircd-host 403 bob "+channel+" :No such channel"
+                    }, connections[0].awaitMessage());
+                }
+
+                @Test
+                void kickNotOnChannelTest() {
+                    connections[0].send("KICK #jircd fred");
+                    assertArrayEquals(new String[]{
+                            ":jircd-host 442 bob #jircd :You're not on that channel"
+                    }, connections[0].awaitMessage());
+                }
+
+                @Test
+                void kickUserNotInChannelTest() {
+                    connections[0].send("JOIN #jircd");
+                    connections[0].ignoreMessage(3);
+
+                    connections[0].send("KICK #jircd fred");
+                    assertArrayEquals(new String[]{
+                            ":jircd-host 441 bob fred #jircd :They aren't on that channel"
+                    }, connections[0].awaitMessage());
+                }
+
+                @Test
+                void kickProtectedUserTest() {
+                    addConnections(1);
+
+                    connections[0].send("JOIN #jircd");
+                    connections[0].ignoreMessage(3);
+
+                    Optional<Channel> channelOpt = getChannel("#jircd");
+                    assertFalse(channelOpt.isEmpty());
+                    Channel channel = channelOpt.get();
+
+                    connections[1].createUser("fred", "Fred Bloggs");
+                    connections[1].send("JOIN #jircd");
+                    connections[1].ignoreMessage(3);
+                    connections[0].ignoreMessage();
+
+                    Optional<User> userOpt = server.users()
+                                                   .stream()
+                                                   .filter(u -> u.info().nickname().equals("fred"))
+                                                   .findFirst();
+                    assertFalse(userOpt.isEmpty());
+                    User user = userOpt.get();
+                    channel.prefix(user, Channel.Rank.PROTECTED.prefix+"");
+
+                    assumeTrue(channel.users().size() == 2);
+                    assumeTrue(channel.isRanked(user, Channel.Rank.PROTECTED));
+
+                    connections[0].send("KICK #jircd fred");
+                    assertArrayEquals(EMPTY_ARRAY, connections[1].awaitMessage());
+
+                    assertEquals(2, channel.users().size());
+                }
+            }
         }
 
         @Nested
@@ -2161,6 +2312,7 @@ class ServerTest {
                             ":jircd-host 212 CONNECT 0",
                             ":jircd-host 212 INFO 0",
                             ":jircd-host 212 JOIN 0",
+                            ":jircd-host 212 KICK 0",
                             ":jircd-host 212 KILL 0",
                             ":jircd-host 212 LIST 0",
                             ":jircd-host 212 MODE 0",
@@ -2181,7 +2333,7 @@ class ServerTest {
                             ":jircd-host 212 USERHOST 0",
                             ":jircd-host 212 VERSION 0",
                             ":jircd-host 219 M :End of /STATS report"
-                    }, connections[0].awaitMessage(24));
+                    }, connections[0].awaitMessage(25));
                 }
 
                 @Test

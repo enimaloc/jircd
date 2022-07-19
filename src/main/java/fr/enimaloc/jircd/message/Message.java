@@ -125,6 +125,8 @@ public class Message {
             new Message(":<source> 432 <client> <nick> :Erroneus nickname");
     public static final Message ERR_NICKNAMEINUSE     =
             new Message(":<source> 433 <client> <nick> :Nickname is already in use");
+    public static final Message ERR_USERNOTINCHANNEL  =
+            new Message(":<source> 441 <client> <nick> <channel> :They aren't on that channel");
     public static final Message ERR_NOTONCHANNEL      =
             new Message(":<source> 442 <client> <channel> :You're not on that channel");
     public static final Message ERR_NEEDMOREPARAMS    =

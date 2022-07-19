@@ -142,6 +142,45 @@ public class Channel {
              .forEach(user -> user.send(message));
     }
 
+    public boolean isRanked(User user, Rank rank) {
+        for (int i = 0; i < Rank.values().length; i++) {
+            if (prefix.get(user) != null
+                && Rank.values()[i].prefix == prefix.get(user).charAt(0)
+                && rank.ordinal() >= i) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public enum Rank {
+        FOUNDER('~', 'q', 5),
+        PROTECTED('&', 'a', 4),
+        OPERATOR('@', 'o', 3),
+        HALF_OPERATOR('%', 'h', 2),
+        VOICE('+', 'v', 1),
+        NONE('\0', '\0', 0);
+
+        public final char prefix;
+        public final char mode;
+        public final int power;
+
+        Rank(char prefix, char mode, int power) {
+            this.prefix = prefix;
+            this.mode = mode;
+            this.power = power;
+        }
+
+        public static Rank getByPower(int power) {
+            for (Rank rank : values()) {
+                if (rank.power == power) {
+                    return rank;
+                }
+            }
+            return NONE;
+        }
+    }
+
     public static final record Topic(String topic, User user, long unixTimestamp) {
         public static final Topic EMPTY = new Topic("", null, -1L);
 

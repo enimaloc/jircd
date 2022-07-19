@@ -50,6 +50,7 @@ public class JIRCD extends Thread {
                 new TopicCommand(),
                 new NamesCommand(),
                 new ListCommand(),
+                new KickCommand(),
 
                 // Server Queries and Commands
                 new MotdCommand(),
