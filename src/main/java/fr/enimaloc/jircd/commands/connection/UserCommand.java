@@ -8,6 +8,11 @@ import fr.enimaloc.jircd.user.UserState;
 @Command(name = "user")
 public class UserCommand {
 
+    @Command
+    public void executeA(User user, String username, String __, String ___, String realName) {
+        execute(user, username, __, ___, realName);
+    }
+
     @Command(trailing = true)
     public void execute(User user, String username, String __, String ___, String realName) {
         if (!user.info().passwordValid()) {
