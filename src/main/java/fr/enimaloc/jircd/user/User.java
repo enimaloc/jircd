@@ -23,11 +23,11 @@ public class User extends Thread {
     private final Timer            pingTimer;
     private final BufferedReader   input;
     private final DataOutputStream output;
-    private final Logger        logger   = LoggerFactory.getLogger(User.class);
-    private final JIRCD         server;
-    private final List<Channel> channels = new ArrayList<>();
-    private final UserInfo      info;
-    private final UserModes         modes;
+    private final Logger           logger   = LoggerFactory.getLogger(User.class);
+    private final JIRCD            server;
+    private final List<Channel>    channels = new ArrayList<>();
+    private final UserInfo         info;
+    private final UserModes        modes;
     private       UserState        state;
     private       boolean          pingSent = false;
     private       long             nextPing;
@@ -50,7 +50,7 @@ public class User extends Thread {
             public void run() {
                 if (System.currentTimeMillis() >= nextPing && !pingSent) {
                     logger.debug("Sent 'PING' to {}", info.host());
-                    send("PING :"+server.settings().host);
+                    send("PING :" + server.settings().host);
                     pingSent = true;
                 }
                 if (pingSent && System.currentTimeMillis() >= nextPing + server.settings().timeout) {
@@ -111,11 +111,13 @@ public class User extends Thread {
         try {
             logger.debug("Disconnected with reason: '{}'", reason);
             state = UserState.DISCONNECTED;
-            this.channels.forEach(channel -> channel.modifiableUsers().remove(this));
-            this.channels.stream().filter(c -> c.users().isEmpty()).forEach(server.originalChannels()::remove);
-            this.channels.forEach(
-                    channel -> channel.broadcast(":" + info.format() + " QUIT :" + (kicked ? "" : "Quit: ") + reason));
-            this.channels.clear();
+            new ArrayList<>(this.channels)
+                    .forEach(channel -> {
+                        channel.broadcast(
+                                ":" + info.format() + " QUIT :" + (kicked ? "" : "Quit: ") + reason,
+                                u -> u != this);
+                        channel.removeUser(this);
+                    });
             output.close();
             input.close();
             socket.close();
@@ -184,7 +186,8 @@ public class User extends Thread {
                                  .addFormat("servername", Constant.NAME)
                                  .addFormat("version", Constant.VERSION));
         send(Message.RPL_CREATED.client(info)
-                                .addFormat("datetime", String.format("%tD %tT", server.createdAt(), server.createdAt())));
+                                .addFormat("datetime",
+                                           String.format("%tD %tT", server.createdAt(), server.createdAt())));
         send(Message.RPL_MYINFO.client(info)
                                .addFormat("servername", Constant.NAME)
                                .addFormat("version", Constant.VERSION)
