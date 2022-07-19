@@ -76,7 +76,8 @@ public class NoticeCommand {
                         builder.append("~");
                 }
             }
-            filter = filter.and(u -> channel.prefix(u).matches(builder.append("]").toString()));
+            builder.append("]");
+            filter = filter.and(u -> channel.prefix(u).matches(builder.toString()));
         }
         channel.broadcast(":" + user.info().format() + " NOTICE " + target + " :" + trailing, filter);
     }
