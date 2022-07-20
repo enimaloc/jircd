@@ -36,7 +36,7 @@ public class NamesCommand {
                 String nicknames = channel.users()
                                           .stream()
                                           .filter(u -> !u.modes().invisible() || userIn)
-                                          .map(u -> channel.prefix(u) + u.info().format())
+                                          .map(u -> channel.prefix(u) + u.modes().prefix() + u.info().format())
                                           .collect(Collectors.joining(" "));
                 user.send(Message.RPL_NAMREPLY.client(user.info())
                                               .addFormat("symbol", channel.modes().secret() ? "@" :

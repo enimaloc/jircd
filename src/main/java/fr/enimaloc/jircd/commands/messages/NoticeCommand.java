@@ -50,7 +50,7 @@ public class NoticeCommand {
                                                                                .matcher(user.info().full())
                                                                                .matches())) ||
             (channel.modes().noExternalMessage() && !channel.users().contains(user)) ||
-            (channel.modes().moderate() && !Regex.CHANNEL_PREFIX.matcher(channel.prefix(user)).matches())) {
+            (channel.modes().moderate() && !Regex.CHANNEL_PREFIX.matcher(channel.prefix(user) + user.modes().prefix()).matches())) {
             return;
         }
         Predicate<User> filter = u -> u != user;
@@ -77,7 +77,7 @@ public class NoticeCommand {
                 }
             }
             builder.append("]");
-            filter = filter.and(u -> channel.prefix(u).matches(builder.toString()));
+            filter = filter.and(u -> (channel.prefix(u) + u.modes().prefix()).matches(builder.toString()));
         }
         channel.broadcast(":" + user.info().format() + " NOTICE " + target + " :" + trailing, filter);
     }

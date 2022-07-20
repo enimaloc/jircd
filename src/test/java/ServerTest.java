@@ -2411,8 +2411,9 @@ addConnections(1);
                             ":jircd-host 212 USER 1",
                             ":jircd-host 212 USERHOST 0",
                             ":jircd-host 212 VERSION 0",
+                            ":jircd-host 212 WHO 0",
                             ":jircd-host 219 M :End of /STATS report"
-                    }, connections[0].awaitMessage(27));
+                    }, connections[0].awaitMessage(28));
                 }
 
                 @Test
@@ -2890,6 +2891,95 @@ addConnections(1);
                         }
                     }
                 }
+            }
+        }
+
+        @Nested
+        class UserQueries {
+
+            @BeforeEach
+            void setUp() {
+                addConnections(3);
+                connections[0].createUser("bob", "Mobbie Plav");
+                connections[1].createUser("fred", "Fred Bloggs");
+                connections[2].createUser("john", "John Doe");
+                connections[3].createUser("jane", "Jane Doe");
+
+                connections[1].send("OPER "+baseSettings.operators.get(0).username()+" "+baseSettings.operators.get(0).password());
+                Optional<User> janeOpt = server.users()
+                                               .stream()
+                                               .filter(u -> u.info().nickname().equals("jane"))
+                                               .findFirst();
+                assumeTrue(janeOpt.isPresent());
+                User jane = janeOpt.get();
+                jane.away("Away");
+            }
+
+            @Test
+            void userQueryWithChannelTest() {
+                connections[0].send("JOIN #bob");
+                connections[0].awaitMessage(3);
+
+                connections[1].send("JOIN #bob");
+                connections[1].awaitMessage(3);
+                connections[0].awaitMessage();
+
+                connections[2].send("JOIN #bob");
+                connections[2].awaitMessage(3);
+                connections[0].awaitMessage();
+                connections[1].awaitMessage();
+
+                connections[3].send("JOIN #bob");
+                connections[3].awaitMessage(3);
+                connections[0].awaitMessage();
+                connections[1].awaitMessage();
+                connections[2].awaitMessage();
+
+                connections[0].send("WHO #bob");
+                assertArrayEquals(new String[]{
+                        ":jircd-host 352 bob #bob bob 127.0.0.1 jircd-host bob H~ :0 Mobbie Plav",
+                        ":jircd-host 352 bob #bob fred 127.0.0.1 jircd-host fred H* :0 Fred Bloggs",
+                        ":jircd-host 352 bob #bob john 127.0.0.1 jircd-host john H :0 John Doe",
+                        ":jircd-host 352 bob #bob jane 127.0.0.1 jircd-host jane G :0 Jane Doe",
+                        ":jircd-host 315 bob #bob :End of /WHO list"
+                }, connections[0].awaitMessage(5));
+            }
+
+            @Test
+            void userQueryWhitUserTest() {
+                connections[0].send("JOIN #bob");
+                connections[0].awaitMessage(3);
+
+                connections[0].send("WHO bob");
+                assertArrayEquals(new String[]{
+                        ":jircd-host 352 bob #bob bob 127.0.0.1 jircd-host bob H~ :0 Mobbie Plav",
+                        ":jircd-host 315 bob bob :End of /WHO list"
+                }, connections[0].awaitMessage(2));
+
+                connections[0].send("WHO fred");
+                assertArrayEquals(new String[]{
+                        ":jircd-host 352 bob * fred 127.0.0.1 jircd-host fred H* :0 Fred Bloggs",
+                        ":jircd-host 315 bob fred :End of /WHO list"
+                }, connections[0].awaitMessage(2));
+            }
+
+            @Test
+            void userQueryWithMaskTest() {
+                connections[0].send("JOIN #bob");
+                connections[0].awaitMessage(3);
+
+                connections[2].send("JOIN #bob");
+                connections[2].awaitMessage(3);
+                connections[0].awaitMessage();
+
+                connections[0].send("WHO *");
+                assertArrayEquals(new String[]{
+                        ":jircd-host 352 bob #bob bob 127.0.0.1 jircd-host bob H~ :0 Mobbie Plav",
+                        ":jircd-host 352 bob * fred 127.0.0.1 jircd-host fred H* :0 Fred Bloggs",
+                        ":jircd-host 352 bob #bob john 127.0.0.1 jircd-host john H :0 John Doe",
+                        ":jircd-host 352 bob * jane 127.0.0.1 jircd-host jane G :0 Jane Doe",
+                        ":jircd-host 315 bob * :End of /WHO list"
+                }, connections[0].awaitMessage(5));
             }
         }
 

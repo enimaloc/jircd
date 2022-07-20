@@ -102,7 +102,7 @@ public class Channel {
                                       .addFormat("channel", name())
                                       .addFormat("nicknames", users()
                                               .stream()
-                                              .map(u -> prefix(u) +
+                                              .map(u -> prefix(u) + u.modes().prefix() +
                                                         u.info().nickname())
                                               .collect(Collectors.joining(" "))));
         user.send(Message.RPL_ENDOFNAMES.client(user.info()).addFormat("channel", name()));
@@ -117,7 +117,7 @@ public class Channel {
     }
 
     public String prefix(User user) {
-        return (prefix.get(user) != null ? prefix.get(user) : "") + user.modes().prefix();
+        return (prefix.get(user) != null ? prefix.get(user) : "");
     }
 
     public void prefix(User user, String prefix) {

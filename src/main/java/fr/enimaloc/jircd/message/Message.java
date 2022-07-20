@@ -68,6 +68,8 @@ public class Message {
             new Message(":<source> 301 <client> <nick> :<message>");
     public static final Message RPL_USERHOST        =
             new Message(":<source> 302 <client> :<reply>");
+    public static final Message RPL_ENDOFWHO        =
+            new Message(":<source> 315 <client> <mask> :End of /WHO list");
     public static final Message RPL_LISTSTART       =
             new Message(":<source> 321 <client> Channel :Users  Name");
     public static final Message RPL_LIST            =
@@ -94,6 +96,8 @@ public class Message {
             new Message(":<source> 349 <client> <channel> :End of channel exception list");
     public static final Message RPL_VERSION         =
             new Message(":<source> 351 <client> <version> <server> :<comments>");
+    public static final Message RPL_WHOREPLY        =
+            new Message(":<source> 352 <client> <channel> <username> <host> <server> <nick> <flags> :<hopcount> <realname>");
     public static final Message RPL_NAMREPLY        =
             new Message(":<source> 353 <client> <symbol> <channel> :<nicknames>");
     public static final Message RPL_ENDOFNAMES      =
