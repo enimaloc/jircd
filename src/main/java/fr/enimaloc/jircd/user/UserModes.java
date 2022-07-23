@@ -5,6 +5,7 @@ public class UserModes {
     private boolean invisible;
     private boolean oper;
     private boolean localOper;
+    private boolean registered;
     private boolean wallops;
 
     public boolean invisible() {
@@ -22,6 +23,15 @@ public class UserModes {
 
     public UserModes oper(boolean oper) {
         this.oper = oper;
+        return this;
+    }
+
+    public boolean registered() {
+        return registered;
+    }
+
+    public UserModes registered(boolean registered) {
+        this.registered = registered;
         return this;
     }
 
@@ -45,19 +55,10 @@ public class UserModes {
 
     @Override
     public String toString() {
-        return "Modes{" +
-               "invisible=" + invisible +
-               ", oper=" + oper +
-               ", localOper=" + localOper +
-               ", wallops=" + wallops +
-               '}';
-    }
-
-    public String modes() {
         return (invisible() ? "i" : "") +
                (oper() ? "o" : "") +
                (localOper() ? "O" : "") +
-//                   (registered() ? "r" : "")+
+               (registered() ? "r" : "") +
                (wallops() ? "w" : "");
     }
 

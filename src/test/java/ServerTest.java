@@ -1,13 +1,16 @@
-import fr.enimaloc.jircd.*;
+import fr.enimaloc.enutils.classes.NumberUtils;
+import fr.enimaloc.jircd.Constant;
+import fr.enimaloc.jircd.channel.Channel;
 import fr.enimaloc.jircd.server.JIRCD;
 import fr.enimaloc.jircd.server.ServerSettings;
-import fr.enimaloc.jircd.channel.Channel;
 import fr.enimaloc.jircd.server.attributes.SupportAttribute;
 import fr.enimaloc.jircd.user.User;
 import fr.enimaloc.jircd.user.UserInfo;
 import fr.enimaloc.jircd.user.UserState;
-import fr.enimaloc.enutils.classes.NumberUtils;
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.PrintStream;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.ParameterizedType;
 import java.net.BindException;
@@ -59,7 +62,7 @@ class ServerTest {
         baseSettings.networkName = "JIRCD";
         baseSettings.pass        = "jircd-pass";
         baseSettings.pingTimeout = TimeUnit.DAYS.toMillis(1);
-        baseSettings.operators = new ArrayList<>(List.of(
+        baseSettings.operators   = new ArrayList<>(List.of(
                 new ServerSettings.Operator("oper", "*", "oper"),
                 new ServerSettings.Operator("googleOper", "google", "pass")
         ));
@@ -121,7 +124,7 @@ class ServerTest {
             BufferedReader input = new BufferedReader(
                     new InputStreamReader(client.getInputStream(), StandardCharsets.ISO_8859_1));
             PrintStream output = new PrintStream(client.getOutputStream());
-            return new Connection(client, input, output);
+            return new Connection(System.currentTimeMillis(), client, input, output);
         }
 
         public void addConnections(int number) {
@@ -164,7 +167,11 @@ class ServerTest {
         }
 
         public Optional<Channel> getChannel(String name) {
-            return new ArrayList<>(server.originalChannels()).stream().filter(c -> c.name().equals(name)).findFirst();
+            return server.channels().stream().filter(c -> c.name().equals(name)).findFirst();
+        }
+
+        public Optional<User> getUser(String nickname) {
+            return server.users().stream().filter(u -> u.info().nickname().equals(nickname)).findFirst();
         }
 
         @BeforeEach
@@ -423,13 +430,14 @@ class ServerTest {
 
         private String getRandomString(int length, int origin, int bound, IntPredicate filter, Charset charset) {
             return new String(new Random().ints(origin, bound)
-                               .filter(filter)
-                               .limit(length)
-                               .collect(StringBuilder::new, StringBuilder::appendCodePoint, StringBuilder::append)
-                               .toString().getBytes(), charset);
+                                          .filter(filter)
+                                          .limit(length)
+                                          .collect(StringBuilder::new, StringBuilder::appendCodePoint,
+                                                   StringBuilder::append)
+                                          .toString().getBytes(), charset);
         }
 
-        record Connection(Socket socket, BufferedReader input, PrintStream output) {
+        record Connection(long joinedAt, Socket socket, BufferedReader input, PrintStream output) {
             public void createUser(String user, String realName) {
                 createUser(user, user, realName);
             }
@@ -468,6 +476,10 @@ class ServerTest {
                     }
                 }
                 return messages.toArray(String[]::new);
+            }
+
+            public void oper(int index) {
+                send("OPER %s %s".formatted(baseSettings.operators.get(index).username(), baseSettings.operators.get(index).password()));
             }
         }
 
@@ -1911,7 +1923,7 @@ class ServerTest {
 
                 @Test
                 void kickReasonTest() {
-addConnections(1);
+                    addConnections(1);
 
                     connections[0].send("JOIN #jircd");
                     connections[0].ignoreMessage(3);
@@ -1968,9 +1980,9 @@ addConnections(1);
                 @Test
                 void kickNoChannelTest() {
                     String channel = "#" + getRandomString(7, 128, 255, i -> true, StandardCharsets.ISO_8859_1);
-                    connections[0].send("KICK "+channel+" fred");
+                    connections[0].send("KICK " + channel + " fred");
                     assertArrayEquals(new String[]{
-                            ":jircd-host 403 bob "+channel+" :No such channel"
+                            ":jircd-host 403 bob " + channel + " :No such channel"
                     }, connections[0].awaitMessage());
                 }
 
@@ -2009,13 +2021,10 @@ addConnections(1);
                     connections[1].ignoreMessage(3);
                     connections[0].ignoreMessage();
 
-                    Optional<User> userOpt = server.users()
-                                                   .stream()
-                                                   .filter(u -> u.info().nickname().equals("fred"))
-                                                   .findFirst();
+                    Optional<User> userOpt = getUser("fred");
                     assertFalse(userOpt.isEmpty());
                     User user = userOpt.get();
-                    channel.prefix(user, Channel.Rank.PROTECTED.prefix+"");
+                    channel.prefix(user, Channel.Rank.PROTECTED.prefix + "");
 
                     assumeTrue(channel.users().size() == 2);
                     assumeTrue(channel.isRanked(user, Channel.Rank.PROTECTED));
@@ -2312,7 +2321,8 @@ addConnections(1);
 
                 @Test
                 void luserTestWithOper() {
-                    connections[0].send("OPER "+baseSettings.operators.get(0).username()+" "+baseSettings.operators.get(0).password());
+                    connections[0].send("OPER " + baseSettings.operators.get(0).username() + " " +
+                                        baseSettings.operators.get(0).password());
                     connections[0].ignoreMessage();
                     assumeTrue(server.users().get(0).modes().oper());
 
@@ -2412,8 +2422,9 @@ addConnections(1);
                             ":jircd-host 212 USERHOST 0",
                             ":jircd-host 212 VERSION 0",
                             ":jircd-host 212 WHO 0",
+                            ":jircd-host 212 WHOIS 0",
                             ":jircd-host 219 M :End of /STATS report"
-                    }, connections[0].awaitMessage(28));
+                    }, connections[0].awaitMessage(29));
                 }
 
                 @Test
@@ -2496,7 +2507,7 @@ addConnections(1);
                     @BeforeEach
                     void setUp() {
                         assumeFalse(server.users().isEmpty());
-                        assumeFalse((user = (User) server.users().get(0)) == null);
+                        assumeFalse((user = server.users().get(0)) == null);
                         assumeTrue(user.info().format().equals("bob"));
                     }
 
@@ -2510,7 +2521,7 @@ addConnections(1);
 
                     @Test
                     void modeTest() {
-                        assumeTrue(user.modes().modes().isEmpty());
+                        assumeTrue(user.modes().toString().isEmpty());
                         connections[0].send("MODE bob");
                         assertArrayEquals(new String[]{
                                 ":jircd-host 221 bob "
@@ -2565,7 +2576,7 @@ addConnections(1);
                             assertArrayEquals(new String[]{
                                     ":jircd-host 501 bob :Unknown MODE flag"
                             }, connections[0].awaitMessage());
-                            assertTrue(user.modes().modes().isEmpty());
+                            assertTrue(user.modes().toString().isEmpty());
                         }
                     }
 
@@ -2625,7 +2636,7 @@ addConnections(1);
                             assertArrayEquals(new String[]{
                                     ":jircd-host 501 bob :Unknown MODE flag"
                             }, connections[0].awaitMessage());
-                            assertTrue(user.modes().modes().isEmpty());
+                            assertTrue(user.modes().toString().isEmpty());
                         }
                     }
                 }
@@ -2905,7 +2916,16 @@ addConnections(1);
                 connections[2].createUser("john", "John Doe");
                 connections[3].createUser("jane", "Jane Doe");
 
-                connections[1].send("OPER "+baseSettings.operators.get(0).username()+" "+baseSettings.operators.get(0).password());
+                connections[1].oper(0);
+
+                Optional<User> johnOpt = server.users()
+                                               .stream()
+                                               .filter(u -> u.info().nickname().equals("john"))
+                                               .findFirst();
+                assumeTrue(johnOpt.isPresent());
+                User john = johnOpt.get();
+                john.info().setHost("enimaloc.fr");
+
                 Optional<User> janeOpt = server.users()
                                                .stream()
                                                .filter(u -> u.info().nickname().equals("jane"))
@@ -2915,71 +2935,202 @@ addConnections(1);
                 jane.away("Away");
             }
 
-            @Test
-            void userQueryWithChannelTest() {
-                connections[0].send("JOIN #bob");
-                connections[0].awaitMessage(3);
+            @Nested
+            class WhoCommand {
 
-                connections[1].send("JOIN #bob");
-                connections[1].awaitMessage(3);
-                connections[0].awaitMessage();
+                @Test
+                void whoWithChannelTest() {
+                    connections[0].send("JOIN #bob");
+                    connections[0].awaitMessage(3);
 
-                connections[2].send("JOIN #bob");
-                connections[2].awaitMessage(3);
-                connections[0].awaitMessage();
-                connections[1].awaitMessage();
+                    connections[1].send("JOIN #bob");
+                    connections[1].awaitMessage(3);
+                    connections[0].awaitMessage();
 
-                connections[3].send("JOIN #bob");
-                connections[3].awaitMessage(3);
-                connections[0].awaitMessage();
-                connections[1].awaitMessage();
-                connections[2].awaitMessage();
+                    connections[2].send("JOIN #bob");
+                    connections[2].awaitMessage(3);
+                    connections[0].awaitMessage();
+                    connections[1].awaitMessage();
 
-                connections[0].send("WHO #bob");
-                assertArrayEquals(new String[]{
-                        ":jircd-host 352 bob #bob bob 127.0.0.1 jircd-host bob H~ :0 Mobbie Plav",
-                        ":jircd-host 352 bob #bob fred 127.0.0.1 jircd-host fred H* :0 Fred Bloggs",
-                        ":jircd-host 352 bob #bob john 127.0.0.1 jircd-host john H :0 John Doe",
-                        ":jircd-host 352 bob #bob jane 127.0.0.1 jircd-host jane G :0 Jane Doe",
-                        ":jircd-host 315 bob #bob :End of /WHO list"
-                }, connections[0].awaitMessage(5));
+                    connections[3].send("JOIN #bob");
+                    connections[3].awaitMessage(3);
+                    connections[0].awaitMessage();
+                    connections[1].awaitMessage();
+                    connections[2].awaitMessage();
+
+                    connections[0].send("WHO #bob");
+                    assertArrayEquals(new String[]{
+                            ":jircd-host 352 bob #bob bob 127.0.0.1 jircd-host bob H~ :0 Mobbie Plav",
+                            ":jircd-host 352 bob #bob fred 127.0.0.1 jircd-host fred H* :0 Fred Bloggs",
+                            ":jircd-host 352 bob #bob john enimaloc.fr jircd-host john H :0 John Doe",
+                            ":jircd-host 352 bob #bob jane 127.0.0.1 jircd-host jane G :0 Jane Doe",
+                            ":jircd-host 315 bob #bob :End of /WHO list"
+                    }, connections[0].awaitMessage(5));
+                }
+
+                @Test
+                void whoWhitUserTest() {
+                    connections[0].send("JOIN #bob");
+                    connections[0].awaitMessage(3);
+
+                    connections[0].send("WHO bob");
+                    assertArrayEquals(new String[]{
+                            ":jircd-host 352 bob #bob bob 127.0.0.1 jircd-host bob H~ :0 Mobbie Plav",
+                            ":jircd-host 315 bob bob :End of /WHO list"
+                    }, connections[0].awaitMessage(2));
+
+                    connections[0].send("WHO fred");
+                    assertArrayEquals(new String[]{
+                            ":jircd-host 352 bob * fred 127.0.0.1 jircd-host fred H* :0 Fred Bloggs",
+                            ":jircd-host 315 bob fred :End of /WHO list"
+                    }, connections[0].awaitMessage(2));
+                }
+
+                @Test
+                void whoWithMaskTest() {
+                    connections[0].send("JOIN #bob");
+                    connections[0].awaitMessage(3);
+
+                    connections[2].send("JOIN #bob");
+                    connections[2].awaitMessage(3);
+                    connections[0].awaitMessage();
+
+                    connections[0].send("WHO *");
+                    assertArrayEquals(new String[]{
+                            ":jircd-host 352 bob #bob bob 127.0.0.1 jircd-host bob H~ :0 Mobbie Plav",
+                            ":jircd-host 352 bob * fred 127.0.0.1 jircd-host fred H* :0 Fred Bloggs",
+                            ":jircd-host 352 bob #bob john enimaloc.fr jircd-host john H :0 John Doe",
+                            ":jircd-host 352 bob * jane 127.0.0.1 jircd-host jane G :0 Jane Doe",
+                            ":jircd-host 315 bob * :End of /WHO list"
+                    }, connections[0].awaitMessage(5));
+                }
             }
 
-            @Test
-            void userQueryWhitUserTest() {
-                connections[0].send("JOIN #bob");
-                connections[0].awaitMessage(3);
+            @Nested
+            class WhoisCommand {
 
-                connections[0].send("WHO bob");
-                assertArrayEquals(new String[]{
-                        ":jircd-host 352 bob #bob bob 127.0.0.1 jircd-host bob H~ :0 Mobbie Plav",
-                        ":jircd-host 315 bob bob :End of /WHO list"
-                }, connections[0].awaitMessage(2));
+//":jircd-host 276 bob <nick> :has client certificate fingerprint <fingerprint>",
+//":jircd-host 307 bob <nick> :is a registered nick",
+//":jircd-host 311 bob <nick> <username> <host> * :<realname>",
+//":jircd-host 312 bob <nick> <server> :<serverinfo>",
+//":jircd-host 313 bob <nick> :is an IRC operator",
+//":jircd-host 317 bob <nick> <secs> <signon> :seconds idle, signon time",
+//":jircd-host 319 bob <nick> :<channels>",
+//":jircd-host 320 bob <nick> :<special>",
+//":jircd-host 330 bob <nick> <account> :is logged in as",
+//":jircd-host 338 bob <nick> <actually>",
+//":jircd-host 378 bob <nick> :is connecting from <host>",
+//":jircd-host 379 bob <nick> :is using modes <modes>",
+//":jircd-host 671 bob <nick> :is using a secure connection",
+//":jircd-host 318 bob <nick> :End of /WHOIS list"
 
-                connections[0].send("WHO fred");
-                assertArrayEquals(new String[]{
-                        ":jircd-host 352 bob * fred 127.0.0.1 jircd-host fred H* :0 Fred Bloggs",
-                        ":jircd-host 315 bob fred :End of /WHO list"
-                }, connections[0].awaitMessage(2));
-            }
+                @Test
+                void whoisSelfTest() {
+                    Optional<User> bobOpt = getUser("bob");
+                    assumeTrue(bobOpt.isPresent());
+                    User bob = bobOpt.get();
 
-            @Test
-            void userQueryWithMaskTest() {
-                connections[0].send("JOIN #bob");
-                connections[0].awaitMessage(3);
+                    connections[0].send("WHOIS bob");
 
-                connections[2].send("JOIN #bob");
-                connections[2].awaitMessage(3);
-                connections[0].awaitMessage();
+                    assertArrayEquals(new String[]{
+//                            ":jircd-host 276 bob bob :has client certificate fingerprint <fingerprint>",
+//                            ":jircd-host 307 bob bob :is a registered nick",
+                            ":jircd-host 311 bob bob bob 127.0.0.1 * :Mobbie Plav",
+                            ":jircd-host 312 bob bob JIRCD :JIRCD",
+//                            ":jircd-host 313 bob bob :is an IRC operator",
+                            ":jircd-host 317 bob bob 0 " + bob.info().joinedAt() + " :seconds idle, signon time",
+                            ":jircd-host 319 bob bob :",
+//                            ":jircd-host 320 bob bob :<special>",
+//                            ":jircd-host 330 bob bob <account> :is logged in as",
+//                            ":jircd-host 338 bob bob <actually>",
+                            ":jircd-host 378 bob bob :is connecting from 127.0.0.1",
+                            ":jircd-host 379 bob bob :is using modes +",
+                            ":jircd-host 671 bob bob :is using a secure connection",
+                            ":jircd-host 318 bob bob :End of /WHOIS list"
+                    }, connections[0].awaitMessage(8));
+                }
 
-                connections[0].send("WHO *");
-                assertArrayEquals(new String[]{
-                        ":jircd-host 352 bob #bob bob 127.0.0.1 jircd-host bob H~ :0 Mobbie Plav",
-                        ":jircd-host 352 bob * fred 127.0.0.1 jircd-host fred H* :0 Fred Bloggs",
-                        ":jircd-host 352 bob #bob john 127.0.0.1 jircd-host john H :0 John Doe",
-                        ":jircd-host 352 bob * jane 127.0.0.1 jircd-host jane G :0 Jane Doe",
-                        ":jircd-host 315 bob * :End of /WHO list"
-                }, connections[0].awaitMessage(5));
+                @Test
+                void whoisJohnTest() {
+                    Optional<User> johnOpt = getUser("john");
+                    assumeTrue(johnOpt.isPresent());
+                    User john = johnOpt.get();
+
+                    connections[0].send("WHOIS john");
+                    assertArrayEquals(new String[]{
+//                            ":jircd-host 276 bob john :has client certificate fingerprint <fingerprint>",
+//                            ":jircd-host 307 bob john :is a registered nick",
+                            ":jircd-host 311 bob john john enimaloc.fr * :John Doe",
+                            ":jircd-host 312 bob john JIRCD :JIRCD",
+//                            ":jircd-host 313 bob john :is an IRC operator",
+                            ":jircd-host 317 bob john 0 " + john.info().joinedAt() + " :seconds idle, signon time",
+                            ":jircd-host 319 bob john :",
+//                            ":jircd-host 320 bob john :<special>",
+//                            ":jircd-host 330 bob john <account> :is logged in as",
+//                            ":jircd-host 338 bob john <actually>",
+                            ":jircd-host 378 bob john :is connecting from enimaloc.fr",
+                            ":jircd-host 379 bob john :is using modes +",
+//                            ":jircd-host 671 bob john :is using a secure connection",
+                            ":jircd-host 318 bob john :End of /WHOIS list"
+                    }, connections[0].awaitMessage(7));
+                }
+
+                @Test
+                void whoisFredTest() {
+                    Optional<User> fredOpt = getUser("fred");
+                    assumeTrue(fredOpt.isPresent());
+                    User fred = fredOpt.get();
+
+                    connections[0].send("WHOIS fred");
+                    assertArrayEquals(new String[]{
+//                            ":jircd-host 276 bob fred :has client certificate fingerprint <fingerprint>",
+//                            ":jircd-host 307 bob fred :is a registered nick",
+                            ":jircd-host 311 bob fred fred 127.0.0.1 * :Fred Bloggs",
+                            ":jircd-host 312 bob fred JIRCD :JIRCD",
+                            ":jircd-host 313 bob fred :is an IRC operator",
+                            ":jircd-host 317 bob fred 0 " + fred.info().joinedAt() + " :seconds idle, signon time",
+                            ":jircd-host 319 bob fred :",
+//                            ":jircd-host 320 bob fred :<special>",
+//                            ":jircd-host 330 bob fred <account> :is logged in as",
+//                            ":jircd-host 338 bob fred <actually>",
+                            ":jircd-host 378 bob fred :is connecting from 127.0.0.1",
+                            ":jircd-host 379 bob fred :is using modes +o",
+                            ":jircd-host 671 bob fred :is using a secure connection",
+                            ":jircd-host 318 bob fred :End of /WHOIS list"
+                    }, connections[0].awaitMessage(9));
+                }
+
+                @Test
+                void whoisWizTest() {
+                    String torIp = "93.95.230.253";
+
+                    addConnections(1);
+                    connections[4].createUser("WiZ", "Jarko Oikarinen");
+                    Optional<User> wizOpt = getUser("WiZ");
+                    assumeTrue(wizOpt.isPresent());
+                    User wiz = wizOpt.get();
+                    wiz.info().setHost(torIp); // https://check.torproject.org/torbulkexitlist
+                    wiz.modes().registered(true);
+                    assumeTrue(wiz.modes().registered());
+
+                    connections[0].send("WHOIS WiZ");
+                    assertArrayEquals(new String[]{
+//                            ":jircd-host 276 bob WiZ :has client certificate fingerprint <fingerprint>",
+                            ":jircd-host 307 bob WiZ :is a registered nick",
+                            ":jircd-host 311 bob WiZ WiZ " + torIp + " * :Jarko Oikarinen",
+                            ":jircd-host 312 bob WiZ JIRCD :JIRCD",
+//                            ":jircd-host 313 bob WiZ :is an IRC operator",
+                            ":jircd-host 317 bob WiZ 0 " + wiz.info().joinedAt() + " :seconds idle, signon time",
+                            ":jircd-host 319 bob WiZ :",
+//                            ":jircd-host 320 bob WiZ :<special>",
+//                            ":jircd-host 330 bob WiZ <account> :is logged in as",
+//                            ":jircd-host 338 bob WiZ <actually>",
+                            ":jircd-host 378 bob WiZ :is connecting from " + torIp,
+                            ":jircd-host 379 bob WiZ :is using modes +r",
+                            ":jircd-host 671 bob WiZ :is using a secure connection",
+                            ":jircd-host 318 bob WiZ :End of /WHOIS list"
+                    }, connections[0].awaitMessage(9));
+                }
             }
         }
 

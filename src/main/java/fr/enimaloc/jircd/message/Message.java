@@ -64,12 +64,30 @@ public class Message {
             new Message(":<source> 258 <client> :<info>");
     public static final Message RPL_ADMINEMAIL      =
             new Message(":<source> 259 <client> :<info>");
+    public static final Message RPL_WHOISCERTFP     =
+            new Message(":<source> 276 <client> <nick> :has client certificate fingerprint <fingerprint>");
     public static final Message RPL_AWAY            =
             new Message(":<source> 301 <client> <nick> :<message>");
     public static final Message RPL_USERHOST        =
             new Message(":<source> 302 <client> :<reply>");
+    public static final Message RPL_WHOISREGNICK    =
+            new Message(":<source> 307 <client> <nick> :is a registered nick");
+    public static final Message RPL_WHOISUSER       =
+            new Message(":<source> 311 <client> <nick> <username> <host> * :<realname>");
+    public static final Message RPL_WHOISSERVER     =
+            new Message(":<source> 312 <client> <nick> <server> :<serverinfo>");
+    public static final Message RPL_WHOISOPERATOR   =
+            new Message(":<source> 313 <client> <nick> :is an IRC operator");
     public static final Message RPL_ENDOFWHO        =
             new Message(":<source> 315 <client> <mask> :End of /WHO list");
+    public static final Message RPL_WHOISIDLE       =
+            new Message(":<source> 317 <client> <nick> <secs> <signon> :seconds idle, signon time");
+    public static final Message RPL_ENDOFWHOIS       =
+            new Message(":<source> 318 <client> <nick> :End of /WHOIS list");
+    public static final Message RPL_WHOISCHANNELS   =
+            new Message(":<source> 319 <client> <nick> :<channels>");
+    public static final Message RPL_WHOISSPECIAL    =
+            new Message(":<source> 320 <client> <nick> :<special>");
     public static final Message RPL_LISTSTART       =
             new Message(":<source> 321 <client> Channel :Users  Name");
     public static final Message RPL_LIST            =
@@ -80,12 +98,18 @@ public class Message {
             new Message(":<source> 324 <client> <channel> <modestring> <mode arguments>");
     public static final Message RPL_CREATIONTIME    =
             new Message(":<source> 329 <client> <channel> <creationtime>");
+    public static final Message RPL_WHOISACCOUNT    =
+            new Message(":<source> 330 <client> <nick> <account> :is logged in as");
     public static final Message RPL_NOTOPIC         =
             new Message(":<source> 331 <client> <channel> :No topic is set");
     public static final Message RPL_TOPIC           =
             new Message(":<source> 332 <client> <channel> :<topic>");
     public static final Message RPL_TOPICWHOTIME    =
             new Message(":<source> 333 <client> <channel> <nick> <setat>");
+    // TODO: 20/07/2022 - Add correctly RPL_WHOISACTUALLY, multiples answers ?
+    @Deprecated // see TODO above
+    public static final Message RPL_WHOISACTUALLY   =
+            new Message(":<source> 338 <client> <nick> <actually>");
     public static final Message RPL_INVITELIST      =
             new Message(":<source> 346 <client> <channel> <mask>");
     public static final Message RPL_ENDOFINVITELIST =
@@ -116,6 +140,11 @@ public class Message {
             new Message(":<source> 375 <client> :- <server> Message of the day - ");
     public static final Message RPL_ENDOFMOTD       =
             new Message(":<source> 376 <client> :End of /MOTD command.");
+    // Warning: RPL_WHOISHOST is unclear, view original source for more information (Unreal as described by alien.net.au)
+    public static final Message RPL_WHOISHOST       =
+            new Message(":<source> 378 <client> <nick> :is connecting from <host>");
+    public static final Message RPL_WHOISMODES      =
+            new Message(":<source> 379 <client> <nick> :is using modes <modes>");
     public static final Message RPL_YOUREOPER       =
             new Message(":<source> 381 <client> :You are now an IRC operator");
     public static final Message RPL_TIME            =
@@ -169,6 +198,8 @@ public class Message {
             new Message(":<source> 502 <client> :Cant change mode for other users");
     public static final Message ERR_HELPNOTFOUND   =
             new Message(":<source> 524 <client> <subject> :No help available on this topic");
+    public static final Message RPL_WHOISSECURE     =
+            new Message(":<source> 671 <client> <nick> :is using a secure connection");
 
     private final String                            base;
     private final boolean                           haveTrailing;

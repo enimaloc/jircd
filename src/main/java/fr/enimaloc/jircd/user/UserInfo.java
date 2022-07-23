@@ -1,21 +1,26 @@
 package fr.enimaloc.jircd.user;
 
 import fr.enimaloc.jircd.server.ServerSettings;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.util.Objects;
 
 public class UserInfo {
 
     private final User                    user;
+    private final long                    joinAt = System.currentTimeMillis();
+    private final ServerSettings          settings;
     private       String                  host;
     private       String                  username;
     private       String                  nickname;
     private       String                  realName;
-    private boolean                 passwordValid;
-    private ServerSettings.Operator oper;
+    private       boolean                 passwordValid;
+    private       ServerSettings.Operator oper;
 
     public UserInfo(User user, ServerSettings settings) {
         this.user          = user;
         this.passwordValid = !hasString(settings.pass);
+        this.settings      = settings;
     }
 
     public String host() {
@@ -110,5 +115,28 @@ public class UserInfo {
                ", nickname='" + nickname + '\'' +
                ", realName='" + realName + '\'' +
                '}';
+    }
+
+    public long joinedAt() {
+        return joinAt;
+    }
+
+    public boolean secure() {
+        return host().matches(String.join("|", settings.safeNet)) || isFromTor();
+    }
+
+    public boolean isFromTor() {
+        if (!host().matches("^(\\d{1,3}\\.){3}\\d{1,3}$")) {
+            return false;
+        }
+        String[] split = host().split("\\.");
+        try {
+            return InetAddress.getByName(
+                                      split[3] + "." + split[2] + "." + split[1] + "." + split[0] + ".dnsel.torproject.org")
+                              .getHostAddress()
+                              .equals("127.0.0.2");
+        } catch (UnknownHostException e) {
+            return false;
+        }
     }
 }

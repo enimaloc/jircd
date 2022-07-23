@@ -156,6 +156,6 @@ public class ModeCommand {
                 }
             }
         }
-        user.send(Message.RPL_UMODEIS.client(user.info()).addFormat("user modes", user.modes().modes()));
+        user.send(Message.RPL_UMODEIS.client(user.info()).addFormat("user modes", user.modes()));
     }
 }

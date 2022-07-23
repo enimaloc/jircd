@@ -12,6 +12,7 @@ import fr.enimaloc.jircd.commands.optional.UserhostCommand;
 import fr.enimaloc.jircd.commands.server.*;
 import fr.enimaloc.jircd.commands.undocumented.miscellaneous.PingCommand;
 import fr.enimaloc.jircd.commands.user.WhoCommand;
+import fr.enimaloc.jircd.commands.user.WhoisCommand;
 import fr.enimaloc.jircd.server.attributes.SupportAttribute;
 import fr.enimaloc.jircd.user.User;
 import java.io.IOException;
@@ -71,6 +72,7 @@ public class JIRCD extends Thread {
 
                 // User Based Queries
                 new WhoCommand(),
+                new WhoisCommand(),
 
                 // Optional Message
                 new UserhostCommand(),

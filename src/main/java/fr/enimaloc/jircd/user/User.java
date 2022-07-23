@@ -31,6 +31,7 @@ public class User extends Thread {
     private       UserState        state;
     private       boolean          pingSent = false;
     private       long             nextPing;
+    private       long             lastActivity;
     private       String           away;
 
     public User(JIRCD server, Socket socket) throws IOException {
@@ -69,6 +70,7 @@ public class User extends Thread {
                 String line = input.readLine();
                 if (line != null) {
                     logger.trace("Handle '{}'", line);
+                    lastActivity = System.currentTimeMillis();
                     nextPing = System.currentTimeMillis() + server.settings().pingTimeout;
                     pingSent = false;
                     logger.trace("Rescheduled ping for {} to {}", this.info.host(),
@@ -227,6 +229,10 @@ public class User extends Thread {
 
     public void away(String away) {
         this.away = away;
+    }
+
+    public long lastActivity() {
+        return lastActivity;
     }
 
     @Override
