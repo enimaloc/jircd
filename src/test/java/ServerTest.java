@@ -3132,6 +3132,18 @@ class ServerTest {
                     }, connections[0].awaitMessage(9));
                 }
             }
+
+            @Nested
+            class WhowasTest {
+                @Test
+                void whowasTest() {
+                    connections[0].send("WHOWAS joe");
+                    assertArrayEquals(new String[]{
+                            ":jircd-host 406 bob :There was no such nickname",
+                            ":jircd-host 369 bob joe :End of WHOWAS"
+                    }, connections[0].awaitMessage(2));
+                }
+            }
         }
 
         @Nested

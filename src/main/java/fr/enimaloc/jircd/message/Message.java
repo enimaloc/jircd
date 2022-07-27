@@ -130,6 +130,8 @@ public class Message {
             new Message(":<source> 367 <client> <channel> <mask>");
     public static final Message RPL_ENDOFBANLIST    =
             new Message(":<source> 368 <client> <channel> :End of channel ban list");
+    public static final Message RPL_ENDOFWHOWAS     =
+            new Message(":<source> 369 <client> <nick> :End of WHOWAS");
     public static final Message RPL_INFO            =
             new Message(":<source> 371 :<string>");
     public static final Message RPL_ENDOFINFO       =
@@ -162,6 +164,8 @@ public class Message {
             new Message(":<source> 404 <client> <channel> :Cannot send to channel");
     public static final Message ERR_TOOMANYCHANNELS   =
             new Message(":<source> 405 <client> <channel> :You have joined too many channels");
+    public static final Message ERR_WASNOSUCHNICK     =
+            new Message(":<source> 406 <client> :There was no such nickname");
     public static final Message ERR_NOMOTD            =
             new Message(":<source> 422 <client> :MOTD File is missing");
     public static final Message ERR_ERRONEUSNICKNAME  =
