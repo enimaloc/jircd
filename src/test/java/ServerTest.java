@@ -13,9 +13,7 @@ import java.io.InputStreamReader;
 import java.io.PrintStream;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.ParameterizedType;
-import java.net.BindException;
-import java.net.Socket;
-import java.net.SocketTimeoutException;
+import java.net.*;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -3530,6 +3528,45 @@ class ServerTest {
                     }, connections[0].awaitMessage());
 
                     assertEquals(baseSettings, server.settings());
+                }
+            }
+
+            @Nested
+            class RestartCommand {
+
+                @Test
+                void restartTest() {
+                    connections[0].createUser("bob", "Mobbye Plav");
+
+                    assumeTrue(server.users().get(0) != null);
+                    server.users().get(0).modes().oper(true);
+
+                    connections[0].send("RESTART");
+                    assertArrayEquals(SOCKET_CLOSE, connections[0].awaitMessage());
+                    assertTrue(server.isShutdown());
+                    assertTrue(waitFor(server::isInterrupted));
+                    assertTrue(waitFor(() -> {
+                        try {
+                            connections[0] = createConnection();
+                            return true;
+                        } catch (ConnectException e) {
+                            return false;
+                        } catch (IOException e) {
+                            fail(e);
+                            return false;
+                        }
+                    }, 1, TimeUnit.MINUTES));
+                    connections[0].createUser("bob", "Mobbye Plav");
+                }
+
+                @Test
+                void restartNotOperTest() {
+                    connections[0].createUser("bob", "Mobbye Plav");
+
+                    connections[0].send("RESTART");
+                    assertArrayEquals(new String[]{
+                            ":jircd-host 481 bob :Permission Denied- You're not an IRC operator"
+                    }, connections[0].awaitMessage());
                 }
             }
 

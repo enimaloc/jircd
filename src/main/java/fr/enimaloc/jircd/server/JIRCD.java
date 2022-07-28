@@ -1,6 +1,9 @@
 package fr.enimaloc.jircd.server;
 
+import com.electronwill.nightconfig.core.conversion.ObjectConverter;
+import com.electronwill.nightconfig.core.file.FileConfig;
 import fr.enimaloc.jircd.Constant;
+import fr.enimaloc.jircd.Main;
 import fr.enimaloc.jircd.channel.Channel;
 import fr.enimaloc.jircd.commands.Command;
 import fr.enimaloc.jircd.commands.channel.*;
@@ -9,6 +12,7 @@ import fr.enimaloc.jircd.commands.messages.NoticeCommand;
 import fr.enimaloc.jircd.commands.messages.PrivmsgCommand;
 import fr.enimaloc.jircd.commands.operator.KillCommand;
 import fr.enimaloc.jircd.commands.operator.RehashCommand;
+import fr.enimaloc.jircd.commands.operator.RestartCommand;
 import fr.enimaloc.jircd.commands.optional.UserhostCommand;
 import fr.enimaloc.jircd.commands.server.*;
 import fr.enimaloc.jircd.commands.connection.PingCommand;
@@ -20,6 +24,8 @@ import fr.enimaloc.jircd.user.User;
 import java.io.IOException;
 import java.lang.reflect.Method;
 import java.net.ServerSocket;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -82,6 +88,7 @@ public class JIRCD extends Thread {
                 // Operator Messages
                 new KillCommand(),
                 new RehashCommand(),
+                new RestartCommand(),
                 // Optional Message
                 new UserhostCommand(),
 
@@ -149,6 +156,20 @@ public class JIRCD extends Thread {
 
         this.serverSocket = new ServerSocket(settings.port);
         this.start();
+    }
+
+    public static JIRCD newInstance() {
+        Path path = Path.of("settings.toml");
+        if (Files.exists(path)) {
+            new ServerSettings().saveAs(path);
+        }
+        try (FileConfig settings = FileConfig.of(path)) {
+            settings.load();
+            return new JIRCD(new ObjectConverter().toObject(settings, ServerSettings::new));
+        } catch (IOException e) {
+            LoggerFactory.getLogger(Main.class).error(e.getLocalizedMessage(), e);
+        }
+        return null;
     }
 
     @Override
