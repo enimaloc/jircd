@@ -8,6 +8,7 @@ import fr.enimaloc.jircd.commands.connection.*;
 import fr.enimaloc.jircd.commands.messages.NoticeCommand;
 import fr.enimaloc.jircd.commands.messages.PrivmsgCommand;
 import fr.enimaloc.jircd.commands.operator.KillCommand;
+import fr.enimaloc.jircd.commands.operator.RehashCommand;
 import fr.enimaloc.jircd.commands.optional.UserhostCommand;
 import fr.enimaloc.jircd.commands.server.*;
 import fr.enimaloc.jircd.commands.connection.PingCommand;
@@ -80,6 +81,7 @@ public class JIRCD extends Thread {
 
                 // Operator Messages
                 new KillCommand(),
+                new RehashCommand(),
                 // Optional Message
                 new UserhostCommand(),
 

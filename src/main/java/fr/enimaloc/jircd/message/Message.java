@@ -149,6 +149,8 @@ public class Message {
             new Message(":<source> 379 <client> <nick> :is using modes <modes>");
     public static final Message RPL_YOUREOPER       =
             new Message(":<source> 381 <client> :You are now an IRC operator");
+    public static final Message RPL_REHASHING       =
+            new Message(":<source> 382 <client> <file> :Rehashing");
     public static final Message RPL_TIME            =
             new Message(":<source> 391 <server> :<string showing server's local time>");
 

@@ -71,7 +71,7 @@ class ServerTest {
         boolean retry = true;
         while (retry && server == null) {
             try {
-                server     = new JIRCD(baseSettings);
+                server     = new JIRCD(baseSettings.copy());
                 attrLength = (int) Math.max(Math.ceil(server.supportAttribute().length() / 13.), 1);
                 retry      = false;
             } catch (BindException ignored) {
@@ -3494,6 +3494,42 @@ class ServerTest {
                             ":jircd-host 481 bob :Permission Denied- You're not an IRC operator"
                     }, connections[0].awaitMessage());
                     assertArrayEquals(EMPTY_ARRAY, connections[1].awaitMessage());
+                }
+            }
+
+            @Nested
+            class RehashCommand {
+
+                @Test
+                void rehashTest() {
+                    connections[0].createUser("bob", "Mobbye Plav");
+
+                    assumeTrue(server.users().get(0) != null);
+                    server.users().get(0).modes().oper(true);
+
+                    // TODO: 28/07/2022 - Add config change here
+                    //  temp solution : create a file named "settings.toml", and put another value, an hardcoded text is
+                    //  loaded a start of the test, and don't take settings.toml as base config file.
+
+                    connections[0].send("REHASH");
+                    String[] actual = connections[0].awaitMessage();
+                    assertArrayEquals(new String[]{
+                            ":%s 382 bob settings.toml :Rehashing".formatted(server.settings().host)
+                    }, actual);
+
+                    assertNotEquals(baseSettings, server.settings());
+                }
+
+                @Test
+                void rehashNotOperTest() {
+                    connections[0].createUser("bob", "Mobbye Plav");
+
+                    connections[0].send("REHASH");
+                    assertArrayEquals(new String[]{
+                            ":jircd-host 481 bob :Permission Denied- You're not an IRC operator"
+                    }, connections[0].awaitMessage());
+
+                    assertEquals(baseSettings, server.settings());
                 }
             }
 

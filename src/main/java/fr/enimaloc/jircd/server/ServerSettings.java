@@ -13,6 +13,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 import java.util.function.Predicate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -93,6 +94,56 @@ public class ServerSettings {
         new ObjectConverter().toConfig(this, settings);
         settings.save();
         settings.close();
+    }
+
+    public void reload(Path path) {
+        if (Files.exists(path)) {
+            new ServerSettings().saveAs(path);
+        }
+        try (FileConfig settings = FileConfig.of(path)) {
+            settings.load();
+            new ObjectConverter().toObject(settings, this);
+        }
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+
+        ServerSettings that = (ServerSettings) o;
+
+        return port == that.port
+               && pingTimeout == that.pingTimeout
+               && timeout == that.timeout
+               && Objects.equals(pass, that.pass)
+               && Objects.equals(host, that.host)
+               && Objects.equals(networkName, that.networkName)
+               && Objects.equals(admin, that.admin)
+               && Objects.equals(operators, that.operators)
+               && Objects.equals(unsafeNickname, that.unsafeNickname)
+               && Objects.equals(safeNet, that.safeNet)
+               && Arrays.equals(motd, that.motd);
+    }
+
+    @Override
+    public int hashCode() {
+        int result = port;
+        result = 31 * result + (int) (pingTimeout ^ (pingTimeout >>> 32));
+        result = 31 * result + (int) (timeout ^ (timeout >>> 32));
+        result = 31 * result + (pass != null ? pass.hashCode() : 0);
+        result = 31 * result + (host != null ? host.hashCode() : 0);
+        result = 31 * result + (networkName != null ? networkName.hashCode() : 0);
+        result = 31 * result + (admin != null ? admin.hashCode() : 0);
+        result = 31 * result + (operators != null ? operators.hashCode() : 0);
+        result = 31 * result + (unsafeNickname != null ? unsafeNickname.hashCode() : 0);
+        result = 31 * result + (safeNet != null ? safeNet.hashCode() : 0);
+        result = 31 * result + Arrays.hashCode(motd);
+        return result;
     }
 
     public static class Operator {
