@@ -1,4 +1,4 @@
-package fr.enimaloc.jircd.commands.miscellaneous;
+package fr.enimaloc.jircd.commands.operator;
 
 import fr.enimaloc.jircd.message.Message;
 import fr.enimaloc.jircd.commands.Command;

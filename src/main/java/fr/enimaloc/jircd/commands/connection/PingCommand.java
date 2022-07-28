@@ -1,4 +1,4 @@
-package fr.enimaloc.jircd.commands.undocumented.miscellaneous;
+package fr.enimaloc.jircd.commands.connection;
 
 import fr.enimaloc.jircd.message.Message;
 import fr.enimaloc.jircd.commands.Command;

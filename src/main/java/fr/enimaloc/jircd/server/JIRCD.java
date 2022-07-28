@@ -7,10 +7,10 @@ import fr.enimaloc.jircd.commands.channel.*;
 import fr.enimaloc.jircd.commands.connection.*;
 import fr.enimaloc.jircd.commands.messages.NoticeCommand;
 import fr.enimaloc.jircd.commands.messages.PrivmsgCommand;
-import fr.enimaloc.jircd.commands.miscellaneous.KillCommand;
+import fr.enimaloc.jircd.commands.operator.KillCommand;
 import fr.enimaloc.jircd.commands.optional.UserhostCommand;
 import fr.enimaloc.jircd.commands.server.*;
-import fr.enimaloc.jircd.commands.undocumented.miscellaneous.PingCommand;
+import fr.enimaloc.jircd.commands.connection.PingCommand;
 import fr.enimaloc.jircd.commands.user.WhoCommand;
 import fr.enimaloc.jircd.commands.user.WhoisCommand;
 import fr.enimaloc.jircd.commands.user.WhowasCommand;
@@ -44,6 +44,8 @@ public class JIRCD extends Thread {
                 new PassCommand(),
                 new NickCommand(),
                 new UserCommand(),
+                new PingCommand(),
+//                new PongCommand(), // Included in client thread
                 new OperCommand(),
                 new QuitCommand(),
 
@@ -76,15 +78,13 @@ public class JIRCD extends Thread {
                 new WhoisCommand(),
                 new WhowasCommand(),
 
+                // Operator Messages
+                new KillCommand(),
                 // Optional Message
                 new UserhostCommand(),
 
                 // Miscellaneous Messages
                 new KillCommand(),
-
-                // Undocumented
-                // Miscellaneous
-                new PingCommand()
         )) {
             Class<?> clazz         = cmd.getClass();
             String   nameByAClazz  = "__DEFAULT__";
