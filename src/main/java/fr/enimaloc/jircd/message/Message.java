@@ -11,7 +11,8 @@ import java.util.regex.Pattern;
 public class Message {
 
     public static final Message CMD_JOIN = new Message(":<source> JOIN %s");
-    public static final Message CMD_AWAY = new Message(":<source> AWAY");
+    public static final Message CMD_AWAY    = new Message(":<source> AWAY");
+    public static final Message CMD_WALLOPS = new Message(":<source> WALLOPS :%s");
 
     public static final Message RPL_WELCOME         =
             new Message(":<source> 001 <client> :Welcome to the <network> Network, <nick>");
@@ -213,7 +214,7 @@ public class Message {
             new Message(":<source> 502 <client> :Cant change mode for other users");
     public static final Message ERR_HELPNOTFOUND   =
             new Message(":<source> 524 <client> <subject> :No help available on this topic");
-    public static final Message RPL_WHOISSECURE     =
+    public static final Message RPL_WHOISSECURE =
             new Message(":<source> 671 <client> <nick> :is using a secure connection");
 
     private final String                            base;

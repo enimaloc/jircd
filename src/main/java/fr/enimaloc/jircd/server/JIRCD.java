@@ -17,11 +17,13 @@ import fr.enimaloc.jircd.commands.operator.SQuitCommand;
 import fr.enimaloc.jircd.commands.optional.AwayCommand;
 import fr.enimaloc.jircd.commands.optional.LinksCommand;
 import fr.enimaloc.jircd.commands.optional.UserhostCommand;
+import fr.enimaloc.jircd.commands.optional.WallOpsCommand;
 import fr.enimaloc.jircd.commands.server.*;
 import fr.enimaloc.jircd.commands.connection.PingCommand;
 import fr.enimaloc.jircd.commands.user.WhoCommand;
 import fr.enimaloc.jircd.commands.user.WhoisCommand;
 import fr.enimaloc.jircd.commands.user.WhowasCommand;
+import fr.enimaloc.jircd.message.Message;
 import fr.enimaloc.jircd.server.attributes.SupportAttribute;
 import fr.enimaloc.jircd.user.User;
 import java.io.IOException;
@@ -30,6 +32,7 @@ import java.net.ServerSocket;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
+import java.util.function.Predicate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -97,8 +100,8 @@ public class JIRCD extends Thread {
                 // Optional Message
                 new AwayCommand(),
                 new LinksCommand(),
-                new UserhostCommand()
-                new KillCommand(),
+                new UserhostCommand(),
+                new WallOpsCommand()
         )) {
             Class<?> clazz         = cmd.getClass();
             String   nameByAClazz  = "__DEFAULT__";
@@ -195,8 +198,20 @@ public class JIRCD extends Thread {
         super.run();
     }
 
+    public void broadcast(String source, Message message) {
+        broadcast(source, message, u -> true);
+    }
+
     public void broadcast(String message) {
-        new ArrayList<>(users).forEach(user -> user.send(message));
+        broadcast(message, u -> true);
+    }
+
+    public void broadcast(String source, Message message, Predicate<? super User> filter) {
+        broadcast(message.format(source), filter);
+    }
+
+    public void broadcast(String message, Predicate<? super User> filter) {
+        new ArrayList<>(users).stream().filter(filter).forEach(user -> user.send(message));
     }
 
     public void shutdown() {
