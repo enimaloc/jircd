@@ -2394,6 +2394,7 @@ class ServerTest {
                     connections[0].send("STATS m");
                     assertArrayEquals(new String[]{
                             ":jircd-host 212 ADMIN 0",
+                            ":jircd-host 212 AWAY 0",
                             ":jircd-host 212 CONNECT 0",
                             ":jircd-host 212 HELP 0",
                             ":jircd-host 212 INFO 0",
@@ -2413,6 +2414,9 @@ class ServerTest {
                             ":jircd-host 212 PING 0",
                             ":jircd-host 212 PRIVMSG 0",
                             ":jircd-host 212 QUIT 0",
+                            ":jircd-host 212 REHASH 0",
+                            ":jircd-host 212 RESTART 0",
+                            ":jircd-host 212 SQUIT 0",
                             ":jircd-host 212 STATS 1",
                             ":jircd-host 212 TIME 0",
                             ":jircd-host 212 TOPIC 0",
@@ -2421,8 +2425,9 @@ class ServerTest {
                             ":jircd-host 212 VERSION 0",
                             ":jircd-host 212 WHO 0",
                             ":jircd-host 212 WHOIS 0",
+                            ":jircd-host 212 WHOWAS 0",
                             ":jircd-host 219 M :End of /STATS report"
-                    }, connections[0].awaitMessage(29));
+                    }, connections[0].awaitMessage(34));
                 }
 
                 @Test
