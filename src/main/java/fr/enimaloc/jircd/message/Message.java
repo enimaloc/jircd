@@ -11,6 +11,7 @@ import java.util.regex.Pattern;
 public class Message {
 
     public static final Message CMD_JOIN = new Message(":<source> JOIN %s");
+    public static final Message CMD_AWAY = new Message(":<source> AWAY");
 
     public static final Message RPL_WELCOME         =
             new Message(":<source> 001 <client> :Welcome to the <network> Network, <nick>");
@@ -70,6 +71,10 @@ public class Message {
             new Message(":<source> 301 <client> <nick> :<message>");
     public static final Message RPL_USERHOST        =
             new Message(":<source> 302 <client> :<reply>");
+    public static final Message RPL_UNAWAY          =
+            new Message(":<source> 305 <client> :You are no longer marked as being away");
+    public static final Message RPL_NOWAWAY         =
+            new Message(":<source> 306 <client> :You have been marked as being away");
     public static final Message RPL_WHOISREGNICK    =
             new Message(":<source> 307 <client> <nick> :is a registered nick");
     public static final Message RPL_WHOISUSER       =

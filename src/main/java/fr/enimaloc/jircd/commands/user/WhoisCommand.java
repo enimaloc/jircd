@@ -31,6 +31,11 @@ public class WhoisCommand {
                                             .addFormat("nickname", nick));
             return;
         }
+        target.away()
+              .map(away -> Message.RPL_AWAY.addFormat("message", away))
+              .map(msg -> msg.addFormat("nick", nick))
+              .map(msg -> msg.client(user.info()))
+              .ifPresent(user::send);
 //         TODO: 23/07/2022 implement certificate tls before
 //        if (target.modes().oper() || target.equals(user)) {
 //            user.send(Message.RPL_WHOISCERTFP.client(user.info())

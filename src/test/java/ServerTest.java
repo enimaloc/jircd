@@ -3129,6 +3129,32 @@ class ServerTest {
                             ":jircd-host 318 bob WiZ :End of /WHOIS list"
                     }, connections[0].awaitMessage(9));
                 }
+
+                @Test
+                void whoisJaneTest() {
+                    Optional<User> janeOpt = getUser("jane");
+                    assumeTrue(janeOpt.isPresent());
+                    User jane = janeOpt.get();
+
+                    connections[0].send("WHOIS jane");
+                    assertArrayEquals(new String[]{
+                            ":jircd-host 301 bob jane :Away",
+//                            ":jircd-host 276 bob jane :has client certificate fingerprint <fingerprint>",
+//                            ":jircd-host 307 bob jane :is a registered nick",
+                            ":jircd-host 311 bob jane jane 127.0.0.1 * :Jane Doe",
+                            ":jircd-host 312 bob jane JIRCD :JIRCD",
+//                            ":jircd-host 313 bob jane :is an IRC operator",
+                            ":jircd-host 317 bob jane 0 " + jane.info().joinedAt() + " :seconds idle, signon time",
+                            ":jircd-host 319 bob jane :",
+//                            ":jircd-host 320 bob jane :<special>",
+//                            ":jircd-host 330 bob jane <account> :is logged in as",
+//                            ":jircd-host 338 bob jane <actually>",
+                            ":jircd-host 378 bob jane :is connecting from 127.0.0.1",
+                            ":jircd-host 379 bob jane :is using modes +",
+                            ":jircd-host 671 bob jane :is using a secure connection",
+                            ":jircd-host 318 bob jane :End of /WHOIS list"
+                    }, connections[0].awaitMessage(9));
+                }
             }
 
             @Nested
@@ -3601,6 +3627,40 @@ class ServerTest {
 
         @Nested
         class OptionalMessage {
+
+            @Nested
+            class AwayCommand {
+
+                @Test
+                void awayTest() {
+                    connections[0].createUser("bob", "Mobbye Plav");
+
+                    User bob = server.users().get(0);
+                    assumeTrue(bob != null);
+
+                    connections[0].send("AWAY :I'm away");
+                    assertArrayEquals(new String[]{
+                            ":jircd-host 306 bob :You have been marked as being away"
+                    }, connections[0].awaitMessage());
+                    assertTrue(bob.away().isPresent());
+                }
+
+                @Test
+                void unawayTest() {
+                    connections[0].createUser("bob", "Mobbye Plav");
+
+                    User bob = server.users().get(0);
+                    assumeTrue(bob != null);
+                    bob.away("I'm away");
+                    assumeTrue(bob.away().isPresent());
+
+                    connections[0].send("AWAY");
+                    assertArrayEquals(new String[]{
+                            ":jircd-host 305 bob :You are no longer marked as being away"
+                    }, connections[0].awaitMessage());
+                    assertTrue(bob.away().isEmpty());
+                }
+            }
 
             @Nested
             class UserhostCommand {

@@ -14,6 +14,7 @@ import fr.enimaloc.jircd.commands.operator.KillCommand;
 import fr.enimaloc.jircd.commands.operator.RehashCommand;
 import fr.enimaloc.jircd.commands.operator.RestartCommand;
 import fr.enimaloc.jircd.commands.operator.SQuitCommand;
+import fr.enimaloc.jircd.commands.optional.AwayCommand;
 import fr.enimaloc.jircd.commands.optional.UserhostCommand;
 import fr.enimaloc.jircd.commands.server.*;
 import fr.enimaloc.jircd.commands.connection.PingCommand;
@@ -93,9 +94,9 @@ public class JIRCD extends Thread {
                 new SQuitCommand(),
 
                 // Optional Message
-                new UserhostCommand(),
+                new AwayCommand(),
 
-                // Miscellaneous Messages
+                new UserhostCommand()
                 new KillCommand(),
         )) {
             Class<?> clazz         = cmd.getClass();

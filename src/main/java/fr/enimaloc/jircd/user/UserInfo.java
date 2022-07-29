@@ -3,7 +3,10 @@ package fr.enimaloc.jircd.user;
 import fr.enimaloc.jircd.server.ServerSettings;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.util.Collections;
+import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 
 public class UserInfo {
 
@@ -16,6 +19,7 @@ public class UserInfo {
     private       String                  realName;
     private       boolean                 passwordValid;
     private       ServerSettings.Operator oper;
+    private       List<String>            capabilities; // TODO: 29/07/2022 - Implement CAP command
 
     public UserInfo(User user, ServerSettings settings) {
         this.user          = user;
@@ -50,6 +54,10 @@ public class UserInfo {
 
     public ServerSettings.Operator oper() {
         return oper;
+    }
+
+    public Set<String> capabilities() {
+        return capabilities == null ? Set.of() : Set.copyOf(capabilities);
     }
 
     public void validPass() {
