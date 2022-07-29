@@ -3570,6 +3570,33 @@ class ServerTest {
                 }
             }
 
+            @Nested
+            class SQuitCommand {
+
+                @Test
+                void quitTest() {
+                    connections[0].createUser("bob", "Mobbye Plav");
+
+                    assumeTrue(server.users().get(0) != null);
+                    server.users().get(0).modes().oper(true);
+
+                    connections[0].send("SQUIT notASrv :I'm out");
+                    assertArrayEquals(new String[]{
+                            ":jircd-host 402 bob notASrv :No such server"
+                    }, connections[0].awaitMessage());
+                }
+
+                @Test
+                void quitNotOperTest() {
+                    connections[0].createUser("bob", "Mobbye Plav");
+
+                    connections[0].send("SQUIT notASrv :I'm out");
+                    assertArrayEquals(new String[]{
+                            ":jircd-host 481 bob :Permission Denied- You're not an IRC operator"
+                    }, connections[0].awaitMessage());
+                }
+            }
+
         }
 
         @Nested
