@@ -126,6 +126,10 @@ class ServerTest {
         }
 
         public void addConnections(int number) {
+            addConnections(number, true);
+        }
+
+        public void addConnections(int number, boolean wait) {
             Connection[] clone = connections.clone();
             this.connections = new Connection[clone.length + number];
             System.arraycopy(clone, 0, connections, 0, clone.length);
@@ -135,6 +139,10 @@ class ServerTest {
                 } catch (IOException e) {
                     fail("Failed to open client socket", e);
                 }
+            }
+
+            if (wait) {
+                assumeTrue(waitFor(() -> server.users().size() == connections.length));
             }
         }
 
@@ -2274,8 +2282,6 @@ class ServerTest {
                 @Test
                 void luserTestWithUnknown() {
                     addConnections(1);
-
-                    assumeTrue(waitFor(() -> server.users().size() == 2));
 
                     connections[0].send("LUSER");
                     assertArrayEquals(new String[]{
