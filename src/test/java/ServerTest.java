@@ -2275,6 +2275,8 @@ class ServerTest {
                 void luserTestWithUnknown() {
                     addConnections(1);
 
+                    assumeTrue(waitFor(() -> server.users().size() == 2));
+
                     connections[0].send("LUSER");
                     assertArrayEquals(new String[]{
                             ":jircd-host 251 bob :There are 1 users and 0 invisibles on 1 servers",
