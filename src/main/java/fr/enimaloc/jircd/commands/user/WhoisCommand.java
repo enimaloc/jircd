@@ -55,8 +55,8 @@ public class WhoisCommand {
                                        .addFormat("realname", target.info().realName()));
         user.send(Message.RPL_WHOISSERVER.client(user.info())
                                          .addFormat("nick", target.info().nickname())
-                                         .addFormat("server", target.server().settings().networkName)
-                                         .addFormat("serverinfo", target.server().settings().networkName));
+                                         .addFormat("server", target.server().settings().host)
+                                         .addFormat("serverinfo", target.server().settings().description));
         if (target.modes().oper()) {
             user.send(Message.RPL_WHOISOPERATOR.client(user.info())
                                                .addFormat("nick", target.info().nickname()));

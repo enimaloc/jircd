@@ -129,6 +129,10 @@ public class Message {
             new Message(":<source> 352 <client> <channel> <username> <host> <server> <nick> <flags> :<hopcount> <realname>");
     public static final Message RPL_NAMREPLY        =
             new Message(":<source> 353 <client> <symbol> <channel> :<nicknames>");
+    public static final Message RPL_LINKS           =
+            new Message(":<source> 364 <client> <mask> <server> :<hopcount> <serverinfo>");
+    public static final Message RPL_ENDOFLINKS      =
+            new Message(":<source> 365 <client> <mask> :End of /LINKS list");
     public static final Message RPL_ENDOFNAMES      =
             new Message(":<source> 366 <client> <channel> :End of /NAMES list");
     public static final Message RPL_BANLIST         =

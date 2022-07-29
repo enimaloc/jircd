@@ -28,6 +28,7 @@ public class ServerSettings {
     public           String         pass           = "";
     public           String         host           = "jircd";
     public           String         networkName    = "jircd";
+    public           String         description    = "jircd is a lightweight IRC server written in Java.";
     public           Admin          admin          = new Admin(
             "Location of the server",
             "details of the institution hosting it",
@@ -123,6 +124,7 @@ public class ServerSettings {
                && Objects.equals(pass, that.pass)
                && Objects.equals(host, that.host)
                && Objects.equals(networkName, that.networkName)
+               && Objects.equals(description, that.description)
                && Objects.equals(admin, that.admin)
                && Objects.equals(operators, that.operators)
                && Objects.equals(unsafeNickname, that.unsafeNickname)
@@ -135,13 +137,14 @@ public class ServerSettings {
         int result = port;
         result = 31 * result + (int) (pingTimeout ^ (pingTimeout >>> 32));
         result = 31 * result + (int) (timeout ^ (timeout >>> 32));
-        result = 31 * result + (pass != null ? pass.hashCode() : 0);
-        result = 31 * result + (host != null ? host.hashCode() : 0);
-        result = 31 * result + (networkName != null ? networkName.hashCode() : 0);
-        result = 31 * result + (admin != null ? admin.hashCode() : 0);
-        result = 31 * result + (operators != null ? operators.hashCode() : 0);
-        result = 31 * result + (unsafeNickname != null ? unsafeNickname.hashCode() : 0);
-        result = 31 * result + (safeNet != null ? safeNet.hashCode() : 0);
+        result = 31 * result + Objects.hashCode(pass);
+        result = 31 * result + Objects.hashCode(host);
+        result = 31 * result + Objects.hashCode(networkName);
+        result = 31 * result + Objects.hashCode(description);
+        result = 31 * result + Objects.hashCode(admin);
+        result = 31 * result + Objects.hashCode(operators);
+        result = 31 * result + Objects.hashCode(unsafeNickname);
+        result = 31 * result + Objects.hashCode(safeNet);
         result = 31 * result + Arrays.hashCode(motd);
         return result;
     }

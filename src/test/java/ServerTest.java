@@ -2401,6 +2401,7 @@ class ServerTest {
                             ":jircd-host 212 JOIN 0",
                             ":jircd-host 212 KICK 0",
                             ":jircd-host 212 KILL 0",
+                            ":jircd-host 212 LINKS 0",
                             ":jircd-host 212 LIST 0",
                             ":jircd-host 212 LUSER 0",
                             ":jircd-host 212 MODE 0",
@@ -2427,7 +2428,7 @@ class ServerTest {
                             ":jircd-host 212 WHOIS 0",
                             ":jircd-host 212 WHOWAS 0",
                             ":jircd-host 219 M :End of /STATS report"
-                    }, connections[0].awaitMessage(34));
+                    }, connections[0].awaitMessage(35));
                 }
 
                 @Test
@@ -3039,7 +3040,7 @@ class ServerTest {
 //                            ":jircd-host 276 bob bob :has client certificate fingerprint <fingerprint>",
 //                            ":jircd-host 307 bob bob :is a registered nick",
                             ":jircd-host 311 bob bob bob 127.0.0.1 * :Mobbie Plav",
-                            ":jircd-host 312 bob bob JIRCD :JIRCD",
+                            ":jircd-host 312 bob bob jircd-host :jircd is a lightweight IRC server written in Java.",
 //                            ":jircd-host 313 bob bob :is an IRC operator",
                             ":jircd-host 317 bob bob 0 " + bob.info().joinedAt() + " :seconds idle, signon time",
                             ":jircd-host 319 bob bob :",
@@ -3064,7 +3065,7 @@ class ServerTest {
 //                            ":jircd-host 276 bob john :has client certificate fingerprint <fingerprint>",
 //                            ":jircd-host 307 bob john :is a registered nick",
                             ":jircd-host 311 bob john john enimaloc.fr * :John Doe",
-                            ":jircd-host 312 bob john JIRCD :JIRCD",
+                            ":jircd-host 312 bob john jircd-host :jircd is a lightweight IRC server written in Java.",
 //                            ":jircd-host 313 bob john :is an IRC operator",
                             ":jircd-host 317 bob john 0 " + john.info().joinedAt() + " :seconds idle, signon time",
                             ":jircd-host 319 bob john :",
@@ -3089,7 +3090,7 @@ class ServerTest {
 //                            ":jircd-host 276 bob fred :has client certificate fingerprint <fingerprint>",
 //                            ":jircd-host 307 bob fred :is a registered nick",
                             ":jircd-host 311 bob fred fred 127.0.0.1 * :Fred Bloggs",
-                            ":jircd-host 312 bob fred JIRCD :JIRCD",
+                            ":jircd-host 312 bob fred jircd-host :jircd is a lightweight IRC server written in Java.",
                             ":jircd-host 313 bob fred :is an IRC operator",
                             ":jircd-host 317 bob fred 0 " + fred.info().joinedAt() + " :seconds idle, signon time",
                             ":jircd-host 319 bob fred :",
@@ -3121,7 +3122,7 @@ class ServerTest {
 //                            ":jircd-host 276 bob WiZ :has client certificate fingerprint <fingerprint>",
                             ":jircd-host 307 bob WiZ :is a registered nick",
                             ":jircd-host 311 bob WiZ WiZ " + torIp + " * :Jarko Oikarinen",
-                            ":jircd-host 312 bob WiZ JIRCD :JIRCD",
+                            ":jircd-host 312 bob WiZ jircd-host :jircd is a lightweight IRC server written in Java.",
 //                            ":jircd-host 313 bob WiZ :is an IRC operator",
                             ":jircd-host 317 bob WiZ 0 " + wiz.info().joinedAt() + " :seconds idle, signon time",
                             ":jircd-host 319 bob WiZ :",
@@ -3147,7 +3148,7 @@ class ServerTest {
 //                            ":jircd-host 276 bob jane :has client certificate fingerprint <fingerprint>",
 //                            ":jircd-host 307 bob jane :is a registered nick",
                             ":jircd-host 311 bob jane jane 127.0.0.1 * :Jane Doe",
-                            ":jircd-host 312 bob jane JIRCD :JIRCD",
+                            ":jircd-host 312 bob jane jircd-host :jircd is a lightweight IRC server written in Java.",
 //                            ":jircd-host 313 bob jane :is an IRC operator",
                             ":jircd-host 317 bob jane 0 " + jane.info().joinedAt() + " :seconds idle, signon time",
                             ":jircd-host 319 bob jane :",
@@ -3665,6 +3666,21 @@ class ServerTest {
                     }, connections[0].awaitMessage());
                     assertTrue(bob.away().isEmpty());
                 }
+            }
+
+            @Nested
+            class LinksCommand {
+
+                    @Test
+                    void linksTest() {
+                        connections[0].createUser("bob", "Mobbye Plav");
+
+                        connections[0].send("LINKS");
+                        assertArrayEquals(new String[]{
+                                ":jircd-host 364 bob * jircd-host :0 jircd is a lightweight IRC server written in Java.",
+                                ":jircd-host 365 bob * :End of /LINKS list"
+                        }, connections[0].awaitMessage(2));
+                    }
             }
 
             @Nested
