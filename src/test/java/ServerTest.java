@@ -3585,7 +3585,7 @@ class ServerTest {
                     connections[0].send("RESTART");
                     assertArrayEquals(SOCKET_CLOSE, connections[0].awaitMessage());
                     assertTrue(server.isShutdown());
-                    assertTrue(waitFor(server::isInterrupted));
+                    assertTrue(waitFor(server::isInterrupted, 1, TimeUnit.MINUTES));
                     assertTrue(waitFor(() -> {
                         try {
                             connections[0] = createConnection();
