@@ -45,7 +45,7 @@ class ServerTest {
     public static final int    TIMEOUT_WHEN_WAITING_RESPONSE = NumberUtils.getSafe(
             System.getenv("TIMEOUT_WHEN_WAITING_RESPONSE"), Integer.class).orElse(1000);
 
-    public static final String[] EMPTY_ARRAY  = new String[0];
+    public static final String[] EMPTY_ARRAY  = new String[]{"\0"};
     public static final String[] SOCKET_CLOSE = new String[]{null};
 
     static ServerSettings baseSettings;
@@ -335,7 +335,7 @@ class ServerTest {
                     ":jircd-host 332 john #bob-sunhat :We talk about bob sunhat",
                     ":jircd-host 353 john = #bob-sunhat :~bob john",
                     ":jircd-host 366 john #bob-sunhat :End of /NAMES list"
-            }, connections[1].awaitMessage(5));
+            }, connections[1].awaitMessage(4));
             assertArrayEquals(new String[]{
                     ":john JOIN #bob-sunhat"
             }, connections[0].awaitMessage());
@@ -491,6 +491,7 @@ class ServerTest {
                     try {
                         messages[i] = input.readLine();
                     } catch (SocketTimeoutException ignored) {
+                        messages[i] = "\0";
                     } catch (IOException e) {
                         logger.error(e.getLocalizedMessage(), e);
                     }
