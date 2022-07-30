@@ -738,7 +738,7 @@ class ServerTest {
                 @Test
                 void passTest() {
                     connections[0].send("PASS " + baseSettings.pass);
-                    assertEquals(0, connections[0].awaitMessage().length);
+                    assertEquals(EMPTY_ARRAY, connections[0].awaitMessage());
                     UserInfo info = server.users().get(0).info();
                     assertTrue(info.passwordValid());
 
@@ -792,7 +792,7 @@ class ServerTest {
                     UserInfo info = server.users().get(0).info();
                     assertTrue(info.passwordValid());
                     assertEquals("bob", info.nickname());
-                    assertArrayEquals(new String[]{}, connections[0].awaitMessage());
+                    assertArrayEquals(EMPTY_ARRAY, connections[0].awaitMessage());
 
                     assertEquals("127.0.0.1", info.host());
                     assertNull(info.username());
@@ -967,6 +967,7 @@ class ServerTest {
             @BeforeEach
             void setUp() {
                 connections[0].createUser("bob", "bobby", "Mobbye Plav");
+                connections[0].ignoreMessage(4 + attrLength + Math.max(1, baseSettings.motd.length));
             }
 
             @FullModuleTest
@@ -1077,7 +1078,7 @@ class ServerTest {
                             ":john JOIN #jircd",
                             ":jircd-host 353 john @ #jircd :~bob john",
                             ":jircd-host 366 john #jircd :End of /NAMES list"
-                    }, connections[1].awaitMessage(4));
+                    }, connections[1].awaitMessage(3));
                     assertEquals(2, channel.users().size());
                 }
 
@@ -1099,7 +1100,7 @@ class ServerTest {
                             ":john JOIN #jircd",
                             ":jircd-host 353 john = #jircd :~bob john",
                             ":jircd-host 366 john #jircd :End of /NAMES list"
-                    }, connections[1].awaitMessage(4));
+                    }, connections[1].awaitMessage(3));
                     assertEquals(2, channel.users().size());
                 }
 
@@ -2329,6 +2330,7 @@ class ServerTest {
 
                 @Test
                 void luserTestWithInvisible() {
+                    assumeTrue(waitFor(() -> server.users().size() > 0));
                     server.users().get(0).modes().invisible(true);
                     assumeTrue(server.users().get(0).modes().invisible());
 
