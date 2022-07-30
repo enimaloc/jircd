@@ -164,19 +164,19 @@ class ServerTest {
             return !waitFor(() -> false, timeout, unit);
         }
 
-        public boolean waitFor(BooleanSupplier condition) {
+        public static boolean waitFor(BooleanSupplier condition) {
             return waitFor(condition, true);
         }
 
-        public boolean waitFor(BooleanSupplier condition, boolean expected) {
+        public static boolean waitFor(BooleanSupplier condition, boolean expected) {
             return waitFor(condition, expected, 5, TimeUnit.SECONDS);
         }
 
-        public boolean waitFor(BooleanSupplier condition, int timeout, TimeUnit unit) {
+        public static boolean waitFor(BooleanSupplier condition, int timeout, TimeUnit unit) {
             return waitFor(condition, true, timeout, unit);
         }
 
-        public boolean waitFor(BooleanSupplier condition, boolean expected, int timeout, TimeUnit unit) {
+        public static boolean waitFor(BooleanSupplier condition, boolean expected, int timeout, TimeUnit unit) {
             long timedOut = System.currentTimeMillis() + unit.toMillis(timeout);
             while (condition.getAsBoolean() != expected) {
                 if (System.currentTimeMillis() >= timedOut) {
@@ -500,6 +500,7 @@ class ServerTest {
 
             public void oper(int index) {
                 send("OPER %s %s".formatted(baseSettings.operators.get(index).username(), baseSettings.operators.get(index).password()));
+                assumeTrue(waitFor(() -> awaitMessage()[0].contains("381")));
             }
         }
 
