@@ -37,17 +37,19 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class JIRCD extends Thread {
-    private final Map<String, Map<Command.CommandIdentifier, Command.CommandIdentity>> commands     = new HashMap<>();
-    private final Map<String, Integer>                                                 commandUsage = new TreeMap<>();
 
-    private final ServerSocket  serverSocket;
-    private final List<User>    users    = new ArrayList<>();
-    private final List<Channel> channels = new ArrayList<>();
-    private final Logger        logger   = LoggerFactory.getLogger(JIRCD.class);
-    private final ServerSettings   settings;
-    private final Date             createdAt  = new Date();
-    private final SupportAttribute supportAttribute;
-    private       boolean          isShutdown = false;
+    private final Logger logger = LoggerFactory.getLogger(JIRCD.class);
+
+    protected final ServerSocket                                                         serverSocket;
+    private final   Map<String, Map<Command.CommandIdentifier, Command.CommandIdentity>> commands     = new HashMap<>();
+    private final Map<String, Integer>                                                 commandUsage = new TreeMap<>();
+    private final List<User>                                                           users        = new ArrayList<>();
+    private final List<Channel>                                                        channels     = new ArrayList<>();
+    private final ServerSettings                                                       settings;
+    private final Date                                                                 createdAt    = new Date();
+    private final SupportAttribute                                                     supportAttribute;
+
+    protected boolean isShutdown = false;
 
     public JIRCD(ServerSettings settings) throws IOException {
         super("Server-Receiver");

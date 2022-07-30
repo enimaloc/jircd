@@ -71,7 +71,19 @@ class ServerTest {
         boolean retry = true;
         while (retry && server == null) {
             try {
-                server     = new JIRCD(baseSettings.copy());
+                server     = new JIRCD(baseSettings.copy()) {
+                    @Override
+                    public void shutdown() {
+                        logger.info("Stopping server...");
+                        this.isShutdown = true;
+                        this.interrupt();
+                        try {
+                            serverSocket.close();
+                        } catch (IOException e) {
+                            logger.warn("Failed to correctly shutdown server", e);
+                        }
+                    }
+                };
                 attrLength = (int) Math.max(Math.ceil(server.supportAttribute().length() / 13.), 1);
                 retry      = false;
             } catch (BindException ignored) {
