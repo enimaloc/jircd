@@ -18,6 +18,7 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
@@ -3550,6 +3551,12 @@ class ServerTest {
                     // TODO: 28/07/2022 - Add config change here
                     //  temp solution : create a file named "settings.toml", and put another value, an hardcoded text is
                     //  loaded a start of the test, and don't take settings.toml as base config file.
+                    ServerSettings temp = new ServerSettings();
+                    temp.host = "another-host";
+                    Path path = Path.of("settings.toml");
+                    if (!Files.exists(path)) {
+                        temp.saveAs(path);
+                    }
 
                     connections[0].send("REHASH");
                     String[] actual = connections[0].awaitMessage();
@@ -3558,6 +3565,11 @@ class ServerTest {
                     }, actual);
 
                     assertNotEquals(baseSettings, server.settings());
+                    try {
+                        Files.delete(path);
+                    } catch (IOException e) {
+                        throw new RuntimeException(e);
+                    }
                 }
 
                 @Test
