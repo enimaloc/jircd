@@ -486,16 +486,16 @@ class ServerTest {
             }
 
             public String[] awaitMessage(int count) {
-                List<String> messages = new ArrayList<>();
+                String[] messages = new String[count];
                 for (int i = 0; i < count; i++) {
                     try {
-                        messages.add(input.readLine());
+                        messages[i] = input.readLine();
                     } catch (SocketTimeoutException ignored) {
                     } catch (IOException e) {
                         logger.error(e.getLocalizedMessage(), e);
                     }
                 }
-                return messages.toArray(String[]::new);
+                return messages;
             }
 
             public void oper(int index) {
@@ -868,6 +868,7 @@ class ServerTest {
                 void userTest() {
                     connections[0].send("PASS " + baseSettings.pass);
                     connections[0].send("USER bobby 0 * :Mobbye Plav");
+                    assumeTrue(waitFor(() -> server.users().size() > 0));
                     UserInfo info = server.users().get(0).info();
                     assertTrue(waitFor(() -> info.username() != null && info.realName() != null));
                     assertEquals("bobby", info.username());
