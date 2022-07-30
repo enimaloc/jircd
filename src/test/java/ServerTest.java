@@ -27,6 +27,7 @@ import java.util.function.IntPredicate;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import org.junit.jupiter.api.*;
+import org.junit.jupiter.api.condition.DisabledIfEnvironmentVariable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import utils.FullModuleTest;
@@ -3575,7 +3576,9 @@ class ServerTest {
             @Nested
             class RestartCommand {
 
+                // FIXME: 30/07/2022 Thread not interrupted on TravisCI
                 @Test
+                @DisabledIfEnvironmentVariable(named = "ci", matches = "true", disabledReason = "Thread not interrupt on TravisCI")
                 void restartTest() {
                     connections[0].createUser("bob", "Mobbye Plav");
 
@@ -3585,9 +3588,7 @@ class ServerTest {
                     connections[0].send("RESTART");
                     assertArrayEquals(SOCKET_CLOSE, connections[0].awaitMessage());
                     assertTrue(server.isShutdown());
-                    if (System.getenv("ci") == null) { // FIXME: 30/07/2022 Thread not interrupted on TravisCI
-                        assertTrue(waitFor(server::isInterrupted, 1, TimeUnit.MINUTES));
-                    }
+                    assertTrue(waitFor(server::isInterrupted, 1, TimeUnit.MINUTES));
                     assertTrue(waitFor(() -> {
                         try {
                             connections[0] = createConnection();
