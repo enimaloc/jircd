@@ -466,7 +466,7 @@ class ServerTest {
                 send("PASS %s".formatted(baseSettings.pass));
                 send("NICK %s".formatted(nick));
                 send("USER %s 0 * :%s".formatted(user, realName));
-                ignoreMessage(4 + attrLength + Math.max(1, baseSettings.motd.length));
+                ignoreMessage(5 + attrLength + Math.max(1, baseSettings.motd.length));
             }
 
             public void send(String message) {
@@ -738,7 +738,7 @@ class ServerTest {
                 @Test
                 void passTest() {
                     connections[0].send("PASS " + baseSettings.pass);
-                    assertEquals(EMPTY_ARRAY, connections[0].awaitMessage());
+                    assertArrayEquals(EMPTY_ARRAY, connections[0].awaitMessage());
                     UserInfo info = server.users().get(0).info();
                     assertTrue(info.passwordValid());
 
@@ -755,6 +755,7 @@ class ServerTest {
                     assertArrayEquals(new String[]{
                             ":jircd-host 461 @127.0.0.1 PASS :Not enough parameters"
                     }, connections[0].awaitMessage());
+                    assumeTrue(waitFor(() -> server.users().size() > 0));
                     assertFalse(server.users().get(0).info().passwordValid());
                 }
 
@@ -967,7 +968,6 @@ class ServerTest {
             @BeforeEach
             void setUp() {
                 connections[0].createUser("bob", "bobby", "Mobbye Plav");
-                connections[0].ignoreMessage(4 + attrLength + Math.max(1, baseSettings.motd.length));
             }
 
             @FullModuleTest
@@ -2349,6 +2349,7 @@ class ServerTest {
                     connections[0].send("OPER " + baseSettings.operators.get(0).username() + " " +
                                         baseSettings.operators.get(0).password());
                     connections[0].ignoreMessage();
+                    assumeTrue(waitFor(() -> server.users().size() > 0));
                     assumeTrue(server.users().get(0).modes().oper());
 
                     connections[0].send("LUSER");
