@@ -3578,7 +3578,7 @@ class ServerTest {
 
                 // FIXME: 30/07/2022 Thread not interrupted on TravisCI
                 @Test
-                @DisabledIfEnvironmentVariable(named = "ci", matches = "true", disabledReason = "Thread not interrupt on TravisCI")
+                @DisabledIfEnvironmentVariable(named = "CI", matches = "true", disabledReason = "Thread not interrupt on TravisCI")
                 void restartTest() {
                     connections[0].createUser("bob", "Mobbye Plav");
 
