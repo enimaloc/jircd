@@ -867,9 +867,9 @@ class ServerTest {
                 @Test
                 void userTest() {
                     connections[0].send("PASS " + baseSettings.pass);
-                    connections[0].send("USER bobby 0 * :Mobbye Plav" + ENDING);
-                    assertTrue(waitFor(500, TimeUnit.MILLISECONDS));
+                    connections[0].send("USER bobby 0 * :Mobbye Plav");
                     UserInfo info = server.users().get(0).info();
+                    assertTrue(waitFor(() -> info.username() != null && info.realName() != null));
                     assertEquals("bobby", info.username());
                     assertEquals("Mobbye Plav", info.realName());
                     assertTrue(info.passwordValid());
