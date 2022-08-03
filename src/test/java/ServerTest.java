@@ -68,8 +68,7 @@ class ServerTest {
         ));
 
         logger.info("Creating server with settings: {}", baseSettings);
-        boolean retry = true;
-        while (retry && server == null) {
+        while (server == null) {
             try {
                 server     = new JIRCD(baseSettings.copy()) {
                     @Override
@@ -85,14 +84,14 @@ class ServerTest {
                     }
                 };
                 attrLength = (int) Math.max(Math.ceil(server.supportAttribute().length() / 13.), 1);
-                retry      = false;
+                break;
             } catch (BindException ignored) {
                 int newPort = new Random().nextInt(1000) + 1024;
                 logger.warn("Port {} is currently used, replaced with {}", baseSettings.port, newPort);
                 baseSettings.port = newPort;
             } catch (IOException e) {
-                retry = false;
                 fail("Can't start IRCServer", e);
+                break;
             }
         }
         logger.info("Starting {}", info.getDisplayName());
