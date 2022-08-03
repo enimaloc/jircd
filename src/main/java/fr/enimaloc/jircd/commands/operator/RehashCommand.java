@@ -24,8 +24,8 @@ public class RehashCommand {
             user.send(Message.ERR_NOPRIVILEGES.client(user.info()));
             return;
         }
-        user.server().settings().reload(Path.of("settings.toml"));
         user.send(Message.RPL_REHASHING.client(user.info()).addFormat("file", "settings.toml"));
+        user.server().settings().reload(Path.of("settings.toml"));
     }
 
 }
