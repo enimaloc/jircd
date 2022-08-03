@@ -170,7 +170,7 @@ public class JIRCD extends Thread {
 
     public static JIRCD newInstance() {
         Path path = Path.of("settings.toml");
-        if (Files.exists(path)) {
+        if (!Files.exists(path)) {
             new ServerSettings().saveAs(path);
         }
         try (FileConfig settings = FileConfig.of(path)) {
