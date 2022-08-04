@@ -465,7 +465,13 @@ class ServerTest {
                 send("PASS %s".formatted(baseSettings.pass));
                 send("NICK %s".formatted(nick));
                 send("USER %s 0 * :%s".formatted(user, realName));
-                ignoreMessage(5 + attrLength + Math.max(1, baseSettings.motd.length));
+                waitFor(() -> awaitMessage()[0] != null);
+                ignoreMessage(4 + attrLength + Math.max(1, baseSettings.motd.length));
+            }
+
+            public String[] send(String message, int count) {
+                send(message);
+                return awaitMessage(count);
             }
 
             public void send(String message) {
