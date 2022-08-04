@@ -486,13 +486,29 @@ class ServerTest {
 
             public String[] awaitMessage(int count) {
                 String[] messages = new String[count];
+                StringBuilder line = new StringBuilder();
+                InputStream inputStream;
+
                 for (int i = 0; i < count; i++) {
                     try {
-                        messages[i] = input.readLine();
+                        inputStream = socket.getInputStream();
+                        int read;
+                        while ((read = inputStream.read()) != ENDING.charAt(0) && read != -1) {
+                            line.append((char) read);
+                        }
+                        if (read == -1) {
+                            socket.close();
+                            messages[i] = SOCKET_CLOSE[0];
+                            continue;
+                        }
+                        inputStream.skip(ENDING.length() - 1);
+                        messages[i] = line.toString();
                     } catch (SocketTimeoutException ignored) {
-                        messages[i] = "\0";
+                        messages[i] = EMPTY_ARRAY[0];
                     } catch (IOException e) {
-                        logger.error(e.getLocalizedMessage(), e);
+                        fail(e);
+                    } finally {
+                        line.setLength(0);
                     }
                 }
                 return messages;
