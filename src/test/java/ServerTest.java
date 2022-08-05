@@ -769,8 +769,9 @@ class ServerTest {
                 void passTest() {
                     connections[0].send("PASS " + baseSettings.pass);
                     assertArrayEquals(EMPTY_ARRAY, connections[0].awaitMessage());
+                    assumeTrue(waitFor(() -> server.users().size() > 0));
                     UserInfo info = server.users().get(0).info();
-                    assertTrue(info.passwordValid());
+                    assertTrue(waitFor(info::passwordValid));
 
                     assertEquals("127.0.0.1", info.host());
                     assertNull(info.username());
@@ -781,10 +782,9 @@ class ServerTest {
 
                 @Test
                 void noParamTest() {
-                    connections[0].send("PASS");
                     assertArrayEquals(new String[]{
                             ":jircd-host 461 @127.0.0.1 PASS :Not enough parameters"
-                    }, connections[0].awaitMessage());
+                    }, connections[0].send("PASS", 1));
                     assumeTrue(waitFor(() -> server.users().size() > 0));
                     assertFalse(server.users().get(0).info().passwordValid());
                 }
@@ -793,10 +793,10 @@ class ServerTest {
                 void incorrectPassTest() {
                     String passwd = getRandomString(new Random().nextInt(9) + 1);
                     assumeFalse(baseSettings.pass.equals(passwd));
-                    connections[0].send("PASS " + passwd);
                     assertArrayEquals(new String[]{
                             ":jircd-host 464 @127.0.0.1 :Password incorrect"
-                    }, connections[0].awaitMessage());
+                    }, connections[0].send("PASS " + passwd, 1));
+                    assumeTrue(waitFor(() -> server.users().size() > 0));
                     assertFalse(server.users().get(0).info().passwordValid());
                 }
 
