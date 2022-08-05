@@ -2720,7 +2720,7 @@ class ServerTest {
                         connections[0].ignoreMessage(3);
                         Optional<Channel> channelOpt = getChannel("#bob");
                         assumeTrue(channelOpt.isPresent());
-                        this.channel = (Channel) channelOpt.get();
+                        this.channel = channelOpt.get();
                     }
 
                     @Test
@@ -3267,7 +3267,7 @@ class ServerTest {
 
                     @Test
                     void privmsgAwayUserTest() {
-                        ((User) server.users().get(1)).away("I'm not here for now");
+                        server.users().get(1).away("I'm not here for now");
                         connections[0].send("PRIVMSG john :Hey!");
                         assertArrayEquals(new String[]{
                                 ":jircd-host 301 bob john :I'm not here for now"
@@ -3360,7 +3360,7 @@ class ServerTest {
                         connections[0].ignoreMessage(3);
                         connections[1].ignoreMessage();
                         channel.modes().moderate(true);
-                        ((Channel) channel).prefix(server.users().get(0), "+");
+                        channel.prefix(server.users().get(0), "+");
                         connections[0].send("PRIVMSG #hello :Hey!");
                         assertArrayEquals(EMPTY_ARRAY, connections[0].awaitMessage());
                         assertArrayEquals(new String[]{
@@ -3414,7 +3414,7 @@ class ServerTest {
                                                         .findFirst();
                         assumeTrue(fredOpt.isPresent());
                         User fred = fredOpt.get();
-                        ((Channel) channel).prefix(fred, "@");
+                        channel.prefix(fred, "@");
 
                         connections[0].send("PRIVMSG @#hello :Hey!");
                         assertArrayEquals(EMPTY_ARRAY, connections[0].awaitMessage());
@@ -3497,7 +3497,7 @@ class ServerTest {
                     connections[0].ignoreMessage(3);
                     connections[1].ignoreMessage();
                     channel.modes().moderate(true);
-                    ((Channel) channel).prefix(server.users().get(0), "+");
+                    channel.prefix(server.users().get(0), "+");
                     connections[0].send("NOTICE #hello :Hey!");
                     assertArrayEquals(EMPTY_ARRAY, connections[0].awaitMessage());
                     assertArrayEquals(new String[]{
@@ -3852,7 +3852,7 @@ class ServerTest {
                     addConnections(2);
                     connections[1].createUser("john", "John Doe");
                     assumeTrue(server.users().get(1) != null);
-                    ((User) server.users().get(1)).away("Away!");
+                    server.users().get(1).away("Away!");
                     connections[2].createUser("fred", "Fred Bloggs");
 
                     connections[0].send("USERHOST john fred");
