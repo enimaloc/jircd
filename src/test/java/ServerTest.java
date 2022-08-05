@@ -524,6 +524,21 @@ class ServerTest {
                 send("OPER %s %s".formatted(baseSettings.operators.get(index).username(), baseSettings.operators.get(index).password()));
                 assumeTrue(waitFor(() -> awaitMessage()[0].contains("381")));
             }
+
+            public boolean testConnection(int port) {
+                try (Socket ignored = new Socket("localhost", port)) {
+                    return true;
+                } catch (ConnectException e) {
+                    try {
+                        socket.close();
+                    } catch (IOException ignored) {
+                    }
+                    return false;
+                } catch (IOException e) {
+                    fail(e);
+                    return false;
+                }
+            }
         }
 
         @Nested
