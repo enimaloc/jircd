@@ -7,10 +7,7 @@ import fr.enimaloc.jircd.server.attributes.SupportAttribute;
 import fr.enimaloc.jircd.user.User;
 import fr.enimaloc.jircd.user.UserInfo;
 import fr.enimaloc.jircd.user.UserState;
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.PrintStream;
+import java.io.*;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.ParameterizedType;
 import java.net.*;
@@ -18,7 +15,6 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
@@ -40,10 +36,8 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 class ServerTest {
     public static final String ENDING                        = "\r\n";
-    public static final long   TIMEOUT_BETWEEN_COMMUNICATION = NumberUtils.getSafe(
-            System.getenv("TIMEOUT_BETWEEN_COMMUNICATION"), Long.class).orElse(1000L);
     public static final int    TIMEOUT_WHEN_WAITING_RESPONSE = NumberUtils.getSafe(
-            System.getenv("TIMEOUT_WHEN_WAITING_RESPONSE"), Integer.class).orElse(1000);
+            System.getenv("TIMEOUT_WHEN_WAITING_RESPONSE"), Integer.class).orElse(500);
 
     public static final String[] EMPTY_ARRAY  = new String[]{"\0"};
     public static final String[] SOCKET_CLOSE = new String[]{null};
@@ -56,7 +50,6 @@ class ServerTest {
     @BeforeEach
     void setUp(TestInfo info) {
         baseSettings = new ServerSettings();
-
         baseSettings.motd        = new String[0];
         baseSettings.host        = "jircd-host";
         baseSettings.networkName = "JIRCD";
@@ -457,6 +450,7 @@ class ServerTest {
         }
 
         record Connection(long joinedAt, Socket socket, BufferedReader input, PrintStream output) {
+
             public void createUser(String user, String realName) {
                 createUser(user, user, realName);
             }
@@ -820,14 +814,14 @@ class ServerTest {
             @Nested
             class NickCommand {
                 @Test
-                void nickTest() throws InterruptedException {
+                void nickTest() {
                     connections[0].send("PASS " + baseSettings.pass);
-                    Thread.sleep(TIMEOUT_BETWEEN_COMMUNICATION);
 
                     connections[0].send("NICK bob");
-                    Thread.sleep(TIMEOUT_BETWEEN_COMMUNICATION);
+                    assumeTrue(waitFor(() -> server.users().size() > 0));
                     UserInfo info = server.users().get(0).info();
-                    assertTrue(info.passwordValid());
+                    assertTrue(waitFor(info::passwordValid));
+                    assumeTrue(waitFor(() -> info.nickname() != null));
                     assertEquals("bob", info.nickname());
                     assertArrayEquals(EMPTY_ARRAY, connections[0].awaitMessage());
 
@@ -871,24 +865,30 @@ class ServerTest {
                 }
 
                 @Test
-                void unsafeNickWithSafenetTest() throws InterruptedException {
+                void unsafeNickWithSafenetTest() {
                     connections[0].send("PASS " + baseSettings.pass);
                     String nick = ListUtils.getRandom(baseSettings.unsafeNickname);
                     connections[0].send("NICK " + nick);
-                    Thread.sleep(TIMEOUT_BETWEEN_COMMUNICATION);
 
+                    assumeTrue(waitFor(() -> server.users().size() > 0));
                     UserInfo info = server.users().get(0).info();
-                    assertTrue(info.passwordValid());
+                    assertTrue(waitFor(info::passwordValid));
+                    assumeTrue(waitFor(() -> info.nickname() != null));
                     assertEquals(nick, info.nickname());
                     assertArrayEquals(EMPTY_ARRAY, connections[0].awaitMessage());
+
+                    assertEquals("127.0.0.1", info.host());
+                    assertNull(info.username());
+                    assertNull(info.realName());
+                    assertFalse(info.canRegistrationBeComplete());
                 }
 
                 @Test
-                void unsafeNickWithUnsafenetTest() throws InterruptedException {
+                void unsafeNickWithUnsafenetTest() {
                     connections[0].send("PASS " + baseSettings.pass);
-                    Thread.sleep(TIMEOUT_BETWEEN_COMMUNICATION);
                     String nick = ListUtils.getRandom(baseSettings.unsafeNickname);
 
+                    assumeTrue(waitFor(() -> server.users().size() > 0));
                     UserInfo info = server.users().get(0).info();
                     info.setHost("255.255.255.255");
 
@@ -973,26 +973,22 @@ class ServerTest {
             @Nested
             class QuitCommand {
                 @Test
-                void quitTest() throws InterruptedException {
-                    Thread.sleep(TIMEOUT_BETWEEN_COMMUNICATION);
+                void quitTest() {
                     assumeTrue(waitFor(() -> server.users().size() == 1));
                     User user = server.users().get(0);
-                    connections[0].send("QUIT");
 
-                    Thread.sleep(TIMEOUT_BETWEEN_COMMUNICATION);
+                    connections[0].send("QUIT", 1);
                     assertTrue(server.users().isEmpty());
                     assertEquals(UserState.DISCONNECTED, user.state());
                 }
 
                 @Test
-                void quitWithReasonTest() throws InterruptedException {
-                    Thread.sleep(TIMEOUT_BETWEEN_COMMUNICATION);
+                void quitWithReasonTest() {
                     assumeTrue(waitFor(() -> server.users().size() == 1));
                     User user = server.users().get(0);
-                    connections[0].send("QUIT :Bye");
 
-                    Thread.sleep(TIMEOUT_BETWEEN_COMMUNICATION);
-                    assertTrue(server.users().isEmpty());
+                    connections[0].send("QUIT :Bye", 1);
+                    assertTrue(waitFor(() -> server.users().isEmpty()));
                     assertEquals(UserState.DISCONNECTED, user.state());
                 }
             }
@@ -3099,8 +3095,6 @@ class ServerTest {
                     assumeTrue(bobOpt.isPresent());
                     User bob = bobOpt.get();
 
-                    connections[0].send("WHOIS bob");
-
                     assertArrayEquals(new String[]{
 //                            ":jircd-host 276 bob bob :has client certificate fingerprint <fingerprint>",
 //                            ":jircd-host 307 bob bob :is a registered nick",
@@ -3116,7 +3110,7 @@ class ServerTest {
                             ":jircd-host 379 bob bob :is using modes +",
                             ":jircd-host 671 bob bob :is using a secure connection",
                             ":jircd-host 318 bob bob :End of /WHOIS list"
-                    }, connections[0].awaitMessage(8));
+                    }, connections[0].send("WHOIS bob", 8));
                 }
 
                 @Test
@@ -3125,14 +3119,13 @@ class ServerTest {
                     assumeTrue(johnOpt.isPresent());
                     User john = johnOpt.get();
 
-                    connections[0].send("WHOIS john");
                     assertArrayEquals(new String[]{
 //                            ":jircd-host 276 bob john :has client certificate fingerprint <fingerprint>",
 //                            ":jircd-host 307 bob john :is a registered nick",
                             ":jircd-host 311 bob john john enimaloc.fr * :John Doe",
                             ":jircd-host 312 bob john jircd-host :jircd is a lightweight IRC server written in Java.",
 //                            ":jircd-host 313 bob john :is an IRC operator",
-                            ":jircd-host 317 bob john 0 " + john.info().joinedAt() + " :seconds idle, signon time",
+                            ":jircd-host 317 bob john " + ((System.currentTimeMillis() - john.lastActivity()) / 1000) + " " + john.info().joinedAt() + " :seconds idle, signon time",
                             ":jircd-host 319 bob john :",
 //                            ":jircd-host 320 bob john :<special>",
 //                            ":jircd-host 330 bob john <account> :is logged in as",
@@ -3141,7 +3134,7 @@ class ServerTest {
                             ":jircd-host 379 bob john :is using modes +",
 //                            ":jircd-host 671 bob john :is using a secure connection",
                             ":jircd-host 318 bob john :End of /WHOIS list"
-                    }, connections[0].awaitMessage(7));
+                    }, connections[0].send("WHOIS john", 7));
                 }
 
                 @Test
@@ -3150,14 +3143,13 @@ class ServerTest {
                     assumeTrue(fredOpt.isPresent());
                     User fred = fredOpt.get();
 
-                    connections[0].send("WHOIS fred");
                     assertArrayEquals(new String[]{
 //                            ":jircd-host 276 bob fred :has client certificate fingerprint <fingerprint>",
 //                            ":jircd-host 307 bob fred :is a registered nick",
                             ":jircd-host 311 bob fred fred 127.0.0.1 * :Fred Bloggs",
                             ":jircd-host 312 bob fred jircd-host :jircd is a lightweight IRC server written in Java.",
                             ":jircd-host 313 bob fred :is an IRC operator",
-                            ":jircd-host 317 bob fred 0 " + fred.info().joinedAt() + " :seconds idle, signon time",
+                            ":jircd-host 317 bob fred " + ((System.currentTimeMillis() - fred.lastActivity()) / 1000) + " " + fred.info().joinedAt() + " :seconds idle, signon time",
                             ":jircd-host 319 bob fred :",
 //                            ":jircd-host 320 bob fred :<special>",
 //                            ":jircd-host 330 bob fred <account> :is logged in as",
@@ -3166,7 +3158,7 @@ class ServerTest {
                             ":jircd-host 379 bob fred :is using modes +o",
                             ":jircd-host 671 bob fred :is using a secure connection",
                             ":jircd-host 318 bob fred :End of /WHOIS list"
-                    }, connections[0].awaitMessage(9));
+                    }, connections[0].send("WHOIS fred", 9));
                 }
 
                 @Test
@@ -3182,14 +3174,13 @@ class ServerTest {
                     wiz.modes().registered(true);
                     assumeTrue(wiz.modes().registered());
 
-                    connections[0].send("WHOIS WiZ");
                     assertArrayEquals(new String[]{
 //                            ":jircd-host 276 bob WiZ :has client certificate fingerprint <fingerprint>",
                             ":jircd-host 307 bob WiZ :is a registered nick",
                             ":jircd-host 311 bob WiZ WiZ " + torIp + " * :Jarko Oikarinen",
                             ":jircd-host 312 bob WiZ jircd-host :jircd is a lightweight IRC server written in Java.",
 //                            ":jircd-host 313 bob WiZ :is an IRC operator",
-                            ":jircd-host 317 bob WiZ 0 " + wiz.info().joinedAt() + " :seconds idle, signon time",
+                            ":jircd-host 317 bob WiZ " + ((System.currentTimeMillis() - wiz.lastActivity()) / 1000) + " " + wiz.info().joinedAt() + " :seconds idle, signon time",
                             ":jircd-host 319 bob WiZ :",
 //                            ":jircd-host 320 bob WiZ :<special>",
 //                            ":jircd-host 330 bob WiZ <account> :is logged in as",
@@ -3198,7 +3189,7 @@ class ServerTest {
                             ":jircd-host 379 bob WiZ :is using modes +r",
                             ":jircd-host 671 bob WiZ :is using a secure connection",
                             ":jircd-host 318 bob WiZ :End of /WHOIS list"
-                    }, connections[0].awaitMessage(9));
+                    }, connections[0].send("WHOIS WiZ", 9));
                 }
 
                 @Test
@@ -3215,7 +3206,7 @@ class ServerTest {
                             ":jircd-host 311 bob jane jane 127.0.0.1 * :Jane Doe",
                             ":jircd-host 312 bob jane jircd-host :jircd is a lightweight IRC server written in Java.",
 //                            ":jircd-host 313 bob jane :is an IRC operator",
-                            ":jircd-host 317 bob jane 0 " + jane.info().joinedAt() + " :seconds idle, signon time",
+                            ":jircd-host 317 bob jane " + ((System.currentTimeMillis() - jane.lastActivity()) / 1000) + " " + jane.info().joinedAt() + " :seconds idle, signon time",
                             ":jircd-host 319 bob jane :",
 //                            ":jircd-host 320 bob jane :<special>",
 //                            ":jircd-host 330 bob jane <account> :is logged in as",
@@ -3612,11 +3603,10 @@ class ServerTest {
                         temp.saveAs(path);
                     }
 
-                    connections[0].send("REHASH");
-                    String[] actual = connections[0].awaitMessage();
                     assertArrayEquals(new String[]{
                             ":%s 382 bob settings.toml :Rehashing".formatted(server.settings().host)
-                    }, actual);
+                    }, connections[0].send("REHASH", 1));
+                    connections[0].ignoreMessage();
 
                     assertNotEquals(baseSettings, server.settings());
                     try {
@@ -3652,9 +3642,9 @@ class ServerTest {
                     server.users().get(0).modes().oper(true);
 
                     connections[0].send("RESTART");
-                    assertArrayEquals(SOCKET_CLOSE, connections[0].awaitMessage());
-                    assertTrue(server.isShutdown());
+                    assertTrue(waitFor(server::isShutdown, 5, TimeUnit.MINUTES));
                     assertTrue(waitFor(server::isInterrupted, 1, TimeUnit.MINUTES));
+                    assertTrue(waitFor(() -> !connections[0].testConnection(baseSettings.port)));
                     assertTrue(waitFor(() -> {
                         try {
                             connections[0] = createConnection();
