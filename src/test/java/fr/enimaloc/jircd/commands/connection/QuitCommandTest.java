@@ -25,7 +25,7 @@ class QuitCommandTest extends ConnectionCommandBase {
         User user = server.users().get(0);
 
         connections[0].send("QUIT", 1);
-        assertTrue(server.users().isEmpty());
+        assertTrue(waitFor(server.users()::isEmpty));
         assertEquals(UserState.DISCONNECTED, user.state());
     }
 
