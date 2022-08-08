@@ -10,7 +10,9 @@ import java.lang.reflect.Method;
 @Target({ElementType.TYPE, ElementType.METHOD})
 public @interface Command {
 
-    String name() default "__DEFAULT__";
+    String   DEFAULT_STRING     = "\0";
+
+    String name() default DEFAULT_STRING;
 
     boolean trailing() default false;
 

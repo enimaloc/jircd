@@ -106,14 +106,14 @@ public class JIRCD extends Thread {
                 new WallOpsCommand()
         )) {
             Class<?> clazz         = cmd.getClass();
-            String   nameByAClazz  = "__DEFAULT__";
+            String   nameByAClazz  = Command.DEFAULT_STRING;
             boolean  clazzTrailing = false;
             if (clazz.isAnnotationPresent(Command.class)) {
                 Command annotation = clazz.getAnnotation(Command.class);
                 nameByAClazz  = annotation.name();
                 clazzTrailing = annotation.trailing();
             }
-            if (nameByAClazz.equals("__DEFAULT__")) {
+            if (nameByAClazz.equals(Command.DEFAULT_STRING)) {
                 nameByAClazz = clazz.getSimpleName();
             }
             for (Method method : clazz.getDeclaredMethods()) {
@@ -121,7 +121,7 @@ public class JIRCD extends Thread {
                     Command annotation    = method.getAnnotation(Command.class);
                     String  nameByAMethod = annotation.name();
                     boolean asTrailing    = clazzTrailing || annotation.trailing();
-                    if (nameByAMethod.equals("__DEFAULT__")) {
+                    if (nameByAMethod.equals(Command.DEFAULT_STRING)) {
                         nameByAMethod = nameByAClazz;
                     }
                     Map<Command.CommandIdentifier, Command.CommandIdentity> map = commands.getOrDefault(
