@@ -1,5 +1,6 @@
 package fr.enimaloc.jircd.channel;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.OptionalInt;
@@ -24,9 +25,9 @@ public final class ChannelModes {
             boolean _protected,
             boolean noExternalMessage
     ) {
-        this.except            = except;
-        this.bans              = bans;
-        this.invEx             = invEx;
+        this.except            = except == null ? new ArrayList<>() : except;
+        this.bans              = bans == null ? new ArrayList<>() : bans;
+        this.invEx             = invEx == null ? new ArrayList<>() : invEx;
         this.password          = password;
         this.limit             = limit;
         this.moderate          = moderate;
