@@ -1,6 +1,7 @@
 package fr.enimaloc.jircd.commands.user;
 
 import fr.enimaloc.jircd.user.User;
+import java.net.SocketException;
 import java.util.Optional;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -106,6 +107,11 @@ class WhoisCommandTest extends UserCommandBase {
 
     @Test
     void whoisWizTest() {
+        try {
+            connections[0].socket().setSoTimeout(10000);
+        } catch (SocketException e) {
+            fail("Failed to increase timeout", e);
+        }
         String torIp = "93.95.230.253";
 
         addConnections(1);
