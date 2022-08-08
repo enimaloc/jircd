@@ -123,7 +123,8 @@ public final class ChannelModes {
     }
 
     public String modesArguments() {
-        return (limit().isPresent() ? limit().getAsInt() + " " : "") +
-               (password().isPresent() ? password().get() : "");
+        return (limit().orElse(-1) + " " + password().orElse(""))
+                .replaceFirst("-1 ", "") // No limit
+                .replaceAll(" $", ""); // No password
     }
 }
