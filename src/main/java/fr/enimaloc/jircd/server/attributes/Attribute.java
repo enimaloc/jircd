@@ -1,10 +1,8 @@
 package fr.enimaloc.jircd.server.attributes;
 
 import java.lang.reflect.Field;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.lang.reflect.Modifier;
+import java.util.*;
 import java.util.function.BiPredicate;
 import org.slf4j.LoggerFactory;
 
@@ -39,7 +37,9 @@ public class Attribute {
 
     public Map<String, Object> asMap(BiPredicate<String, Object> filter) {
         Map<String, Object> ret = new HashMap<>();
-        for (Field declaredField : this.getClass().getDeclaredFields()) {
+        for (Field declaredField : Arrays.stream(this.getClass().getDeclaredFields())
+                                         .filter(f -> !Modifier.isTransient(f.getModifiers()))
+                                         .toArray(Field[]::new)) {
             try {
                 if (filter != null && filter.test(declaredField.getName(), declaredField.get(this))) {
                     ret.put(declaredField.getName(), declaredField.get(this));
