@@ -14,7 +14,7 @@ public class PingCommand {
 
     @Command
     public void execute(User user, String server1, String server2) {
-        if (!user.server().settings().host.equals(server2)) {
+        if (!user.server().settings().host().equals(server2)) {
             user.send(Message.ERR_NOSUCHSERVER.client(user.info()).addFormat("", server2));
             return;
         }

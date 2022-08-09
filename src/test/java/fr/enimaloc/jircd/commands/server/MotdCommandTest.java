@@ -31,7 +31,7 @@ class MotdCommandTest extends ServerCommandBase {
 
     @Test
     void motdWithNoMOTDTest() {
-        assumeTrue(server.settings().motd.length == 0);
+        assumeTrue(server.settings().motd().length == 0);
         connections[0].send("MOTD");
         assertArrayEquals(new String[]{
                 ":jircd-host 422 bob :MOTD File is missing"
@@ -44,9 +44,9 @@ class MotdCommandTest extends ServerCommandBase {
         Files.writeString(tempFile, "Custom motd set in temp file");
 
         setSettings(
-                baseSettings.copy(new ServerSettings(tempFile), field -> !field.getName().equals("motd")));
+                baseSettings.copy(new ServerSettings.Builder().motdFile(tempFile).build(), field -> !field.getName().equals("motd")));
 
-        assumeFalse(server.settings().motd.length == 0);
+        assumeFalse(server.settings().motd().length == 0);
         connections[0].send("MOTD");
         assertArrayEquals(new String[]{
                 ":jircd-host 375 bob :- jircd-host Message of the day - ",

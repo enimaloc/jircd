@@ -33,15 +33,17 @@ class RehashCommandTest extends OperatorCommandBase {
         // TODO: 28/07/2022 - Add config change here
         //  temp solution : create a file named "settings.toml", and put another value, an hardcoded text is
         //  loaded a start of the test, and don't take settings.toml as base config file.
-        ServerSettings temp = new ServerSettings();
-        temp.host = "another-host";
+        ServerSettings temp = new ServerSettings.Builder()
+                .host("another-host")
+                .build();
+
         Path path = Path.of("settings.toml");
         if (!Files.exists(path)) {
             temp.saveAs(path);
         }
 
         assertArrayEquals(new String[]{
-                ":%s 382 bob settings.toml :Rehashing".formatted(server.settings().host)
+                ":%s 382 bob settings.toml :Rehashing".formatted(server.settings().host())
         }, connections[0].send("REHASH", 1));
         connections[0].ignoreMessage();
 

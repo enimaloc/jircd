@@ -37,7 +37,7 @@ public class SocketBase extends ServerBase {
     protected Connection[] connections;
 
     protected Connection createConnection() throws IOException {
-        Socket client = new Socket("127.0.0.1", baseSettings.port);
+        Socket client = new Socket("127.0.0.1", baseSettings.port());
         client.setSoTimeout(TIMEOUT_WHEN_WAITING_RESPONSE);
         BufferedReader input = new BufferedReader(
                 new InputStreamReader(client.getInputStream(), StandardCharsets.ISO_8859_1));
@@ -146,11 +146,11 @@ public class SocketBase extends ServerBase {
         }
 
         public void createUser(String nick, String user, String realName) {
-            send("PASS %s".formatted(baseSettings.pass));
+            baseSettings.pass().ifPresent(pass -> send("PASS %s".formatted(pass)));
             send("NICK %s".formatted(nick));
             send("USER %s 0 * :%s".formatted(user, realName));
             waitFor(() -> awaitMessage()[0] != null);
-            ignoreMessage(4 + attrLength + Math.max(1, baseSettings.motd.length));
+            ignoreMessage(4 + attrLength + Math.max(1, baseSettings.motd().length));
         }
 
         public String[] send(String message, int count) {
@@ -205,7 +205,7 @@ public class SocketBase extends ServerBase {
         }
 
         public void oper(int index) {
-            send("OPER %s %s".formatted(baseSettings.operators.get(index).username(), baseSettings.operators.get(index).password()));
+            send("OPER %s %s".formatted(baseSettings.operators().get(index).username(), baseSettings.operators().get(index).password()));
             assumeTrue(waitFor(() -> awaitMessage()[0].contains("381")));
         }
 

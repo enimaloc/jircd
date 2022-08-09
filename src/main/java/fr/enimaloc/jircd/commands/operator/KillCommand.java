@@ -24,7 +24,7 @@ public class KillCommand {
         }
         User   userObj    = userOpt.get();
         String quitReason = "Killed (%s (%s))".formatted(user.info().format(), reason);
-        userObj.send("Closing Link: " + userObj.server().settings().host + " (" + quitReason + ")");
+        userObj.send("Closing Link: " + userObj.server().settings().host() + " (" + quitReason + ")");
         userObj.terminate(quitReason);
     }
 

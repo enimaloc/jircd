@@ -9,16 +9,16 @@ public class MotdCommand {
 
     @Command
     public void execute(User user) {
-        execute(user, user.server().settings().host);
+        execute(user, user.server().settings().host());
     }
 
     @Command
     public void execute(User user, String server) {
-        if (!user.server().settings().host.equals(server)) {
+        if (!user.server().settings().host().equals(server)) {
             user.send(Message.ERR_NOSUCHSERVER.client(user.info()).addFormat("", server));
             return;
         }
-        String[] motd = user.server().settings().motd;
+        String[] motd = user.server().settings().motd();
         if (motd.length == 0) {
             user.send(Message.ERR_NOMOTD.client(user.info()));
             return;

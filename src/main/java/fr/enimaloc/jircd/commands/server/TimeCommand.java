@@ -12,12 +12,12 @@ public class TimeCommand {
 
     @Command
     public void execute(User user) {
-        execute(user, user.server().settings().host);
+        execute(user, user.server().settings().host());
     }
 
     @Command
     public void execute(User user, String server) {
-        if (!user.server().settings().host.equals(server)) {
+        if (!user.server().settings().host().equals(server)) {
             user.send(Message.ERR_NOSUCHSERVER.client(user.info()).addFormat("server name", server));
             return;
         }

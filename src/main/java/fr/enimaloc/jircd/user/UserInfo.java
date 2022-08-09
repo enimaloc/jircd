@@ -23,7 +23,7 @@ public class UserInfo {
 
     public UserInfo(User user, ServerSettings settings) {
         this.user          = user;
-        this.passwordValid = !hasString(settings.pass);
+        this.passwordValid = settings.pass().isEmpty();
         this.settings      = settings;
     }
 
@@ -130,7 +130,7 @@ public class UserInfo {
     }
 
     public boolean secure() {
-        return host().matches(String.join("|", settings.safeNet)) || isFromTor();
+        return host().matches(String.join("|", settings.safeNet())) || isFromTor();
     }
 
     public boolean isFromTor() {

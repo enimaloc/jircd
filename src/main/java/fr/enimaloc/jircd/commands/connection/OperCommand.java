@@ -12,7 +12,7 @@ public class OperCommand {
 
     @Command
     public void execute(User user, String name, String password) {
-        Optional<ServerSettings.Operator> operOptional = user.server().settings().operators.stream().filter(
+        Optional<ServerSettings.Operator> operOptional = user.server().settings().operators().stream().filter(
                 op -> op.username().equalsIgnoreCase(name)).findFirst();
         if (operOptional.isEmpty()) {
             return;

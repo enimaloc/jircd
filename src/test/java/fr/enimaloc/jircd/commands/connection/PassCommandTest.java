@@ -22,7 +22,7 @@ class PassCommandTest extends ConnectionCommandBase {
 
     @Test
     void passTest() {
-        connections[0].send("PASS " + baseSettings.pass);
+        baseSettings.pass().ifPresent(pass -> connections[0].send("PASS " + pass));
         assertArrayEquals(EMPTY_ARRAY, connections[0].awaitMessage());
         assumeTrue(waitFor(() -> server.users().size() > 0));
         UserInfo info = server.users().get(0).info();
@@ -47,7 +47,7 @@ class PassCommandTest extends ConnectionCommandBase {
     @Test
     void incorrectPassTest() {
         String passwd = getRandomString(new Random().nextInt(9) + 1);
-        assumeFalse(baseSettings.pass.equals(passwd));
+        assumeFalse(baseSettings.pass().equals(passwd));
         assertArrayEquals(new String[]{
                 ":jircd-host 464 @127.0.0.1 :Password incorrect"
         }, connections[0].send("PASS " + passwd, 1));
@@ -58,7 +58,7 @@ class PassCommandTest extends ConnectionCommandBase {
     @Test
     void alreadyRegisteredPassTest() {
         connections[0].createUser("john", "John Doe");
-        connections[0].send("PASS " + baseSettings.pass);
+        baseSettings.pass().ifPresent(pass -> connections[0].send("PASS " + pass));
         assertArrayEquals(new String[]{
                 ":jircd-host 462 john :You may not reregister"
         }, connections[0].awaitMessage());

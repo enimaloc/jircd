@@ -46,7 +46,7 @@ public class WhoisCommand {
 
         if (target.modes().registered()) {
             user.send(Message.RPL_WHOISREGNICK.client(user.info())
-                                            .addFormat("nick", target.info().nickname()));
+                                              .addFormat("nick", target.info().nickname()));
         }
         user.send(Message.RPL_WHOISUSER.client(user.info())
                                        .addFormat("nick", target.info().nickname())
@@ -55,8 +55,8 @@ public class WhoisCommand {
                                        .addFormat("realname", target.info().realName()));
         user.send(Message.RPL_WHOISSERVER.client(user.info())
                                          .addFormat("nick", target.info().nickname())
-                                         .addFormat("server", target.server().settings().host)
-                                         .addFormat("serverinfo", target.server().settings().description));
+                                         .addFormat("server", target.server().settings().host())
+                                         .addFormat("serverinfo", target.server().settings().description()));
         if (target.modes().oper()) {
             user.send(Message.RPL_WHOISOPERATOR.client(user.info())
                                                .addFormat("nick", target.info().nickname()));
@@ -98,7 +98,8 @@ public class WhoisCommand {
                                         .addFormat("nick", target.info().nickname()));
     }
 
-    // TODO: 20/07/2022 - need to understand how to implement this command and specially target parameter, this command return ENDOFWHOIS for the moment
+    // TODO: 20/07/2022 - need to understand how to implement this command and specially target parameter,
+    //  this command return ENDOFWHOIS for the moment
     @Command
     public void execute(User user, String target, String nick) {
         user.send(Message.RPL_ENDOFWHOIS.client(user.info())

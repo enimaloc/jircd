@@ -62,7 +62,7 @@ public class VersionCommand {
 
     @Command
     public void execute(User user) {
-        execute(user, user.server().settings().host);
+        execute(user, user.server().settings().host());
     }
 
     @Command
@@ -74,7 +74,7 @@ public class VersionCommand {
                                      .stream()
                                      .filter(u -> compile.matcher(u.info().format()).matches())
                                      .findFirst();
-        if (compile.matcher(user.server().settings().host).matches()) {
+        if (compile.matcher(user.server().settings().host()).matches()) {
             server = user.server();
         } else if (subject.isPresent()) {
             server = subject.get().server();
@@ -85,7 +85,7 @@ public class VersionCommand {
 
         user.send(Message.RPL_VERSION.client(user.info())
                                      .addFormat("version", Constant.VERSION)
-                                     .addFormat("server", server.settings().host)
+                                     .addFormat("server", server.settings().host())
                                      .addFormat("comments", ""));
         send_ISUPPORT(user, server);
     }

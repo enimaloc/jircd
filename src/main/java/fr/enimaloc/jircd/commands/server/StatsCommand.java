@@ -12,13 +12,13 @@ public class StatsCommand {
 
     @Command
     public void execute(User user, String query) {
-        execute(user, query, user.server().settings().host);
+        execute(user, query, user.server().settings().host());
     }
 
     @Command
     public void execute(User user, String queryS, String server) {
         JIRCD serverObj = user.server();
-        if (!user.server().settings().host.equals(server)) {
+        if (!user.server().settings().host().equals(server)) {
             user.send(Message.ERR_NOSUCHSERVER.client(user.info()).addFormat("", server));
             return;
         }

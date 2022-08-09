@@ -65,7 +65,7 @@ class PartCommandTest extends CommandChannelBase {
         }
 
         connections[1].createUser("john", "John Doe");
-        connections[1].ignoreMessage(6 + attrLength + baseSettings.motd.length);
+        connections[1].ignoreMessage(6 + attrLength + baseSettings.motd().length);
         connections[1].send("JOIN " + channels.stream()
                                               .map(Channel::name)
                                               .collect(Collectors.joining(",")));

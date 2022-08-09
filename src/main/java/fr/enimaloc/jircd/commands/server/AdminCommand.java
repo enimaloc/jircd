@@ -12,7 +12,7 @@ public class AdminCommand {
 
     @Command
     public void execute(User user) {
-        execute(user, user.server().settings().host);
+        execute(user, user.server().settings().host());
     }
 
     @Command
@@ -24,7 +24,7 @@ public class AdminCommand {
                                      .stream()
                                      .filter(u -> compile.matcher(u.info().format()).matches())
                                      .findFirst();
-        if (compile.matcher(user.server().settings().host).matches()) {
+        if (compile.matcher(user.server().settings().host()).matches()) {
             server = user.server();
         } else if (subject.isPresent()) {
             server = subject.get().server();
@@ -33,9 +33,9 @@ public class AdminCommand {
             return;
         }
 
-        user.send(Message.RPL_ADMINME.client(user.info()).addFormat("server", server.settings().host));
-        user.send(Message.RPL_ADMINLOC1.client(user.info()).addFormat("info", server.settings().admin.loc1()));
-        user.send(Message.RPL_ADMINLOC2.client(user.info()).addFormat("info", server.settings().admin.loc2()));
-        user.send(Message.RPL_ADMINEMAIL.client(user.info()).addFormat("info", server.settings().admin.email()));
+        user.send(Message.RPL_ADMINME.client(user.info()).addFormat("server", server.settings().host()));
+        user.send(Message.RPL_ADMINLOC1.client(user.info()).addFormat("info", server.settings().admin().loc1()));
+        user.send(Message.RPL_ADMINLOC2.client(user.info()).addFormat("info", server.settings().admin().loc2()));
+        user.send(Message.RPL_ADMINEMAIL.client(user.info()).addFormat("info", server.settings().admin().email()));
     }
 }

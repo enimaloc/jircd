@@ -21,4 +21,9 @@ public record Mask(String mask) {
     public Pattern toPattern() {
         return Pattern.compile(toRegex());
     }
+
+    @Override
+    public String toString() {
+        return mask;
+    }
 }

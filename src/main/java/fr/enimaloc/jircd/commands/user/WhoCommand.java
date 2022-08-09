@@ -55,7 +55,7 @@ public class WhoCommand {
                                                   : target.channels().get(0).name())
                                           .addFormat("username", target.info().username())
                                           .addFormat("host", target.info().host().replaceFirst(":", "0:"))
-                                          .addFormat("server", server.settings().host)
+                                          .addFormat("server", server.settings().host())
                                           .addFormat("nick", target.info().nickname())
                                           .addFormat("flags", target.away()
                                                                     .map(away -> "G")

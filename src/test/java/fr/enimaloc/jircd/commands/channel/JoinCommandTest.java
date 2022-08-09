@@ -388,10 +388,10 @@ class JoinCommandTest extends CommandChannelBase {
         channel.modes().limit(1);
         assumeTrue(channel.modes().limit().isPresent() && channel.modes().limit().getAsInt() == 1);
 
-        connections[1].send("PASS " + baseSettings.pass);
+        baseSettings.pass().ifPresent(pass -> connections[1].send("PASS " + pass));
         connections[1].send("NICK bab");
         connections[1].send("USER babby 0 * :MAbbye Plov");
-        connections[1].ignoreMessage(6 + attrLength + baseSettings.motd.length);
+        connections[1].ignoreMessage(6 + attrLength + baseSettings.motd().length);
         connections[1].send("JOIN " + channel.name());
         assertArrayEquals(new String[]{
                 ":jircd-host 471 bab %s :Cannot join channel (+l)".formatted(channel.name())

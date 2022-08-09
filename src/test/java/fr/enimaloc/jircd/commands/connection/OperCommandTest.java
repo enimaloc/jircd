@@ -20,7 +20,7 @@ class OperCommandTest extends ConnectionCommandBase {
 
     @Test
     void operTest() {
-        ServerSettings.Operator savedOper = baseSettings.operators.get(0);
+        ServerSettings.Operator savedOper = baseSettings.operators().get(0);
         connections[0].send("OPER " + savedOper.username() + " " + savedOper.password());
         assertArrayEquals(new String[]{
                 ":jircd-host 381 @127.0.0.1 :You are now an IRC operator"
@@ -29,7 +29,7 @@ class OperCommandTest extends ConnectionCommandBase {
 
     @Test
     void incorrectPasswdOperTest() {
-        ServerSettings.Operator savedOper = baseSettings.operators.get(0);
+        ServerSettings.Operator savedOper = baseSettings.operators().get(0);
         connections[0].send(
                 "OPER " + savedOper.username() + " " + getRandomString(new Random().nextInt(9) + 1));
         assertArrayEquals(new String[]{
@@ -47,8 +47,8 @@ class OperCommandTest extends ConnectionCommandBase {
 
     @Test
     void incorrectOperHostTest() {
-        connections[0].send("OPER " + baseSettings.operators.get(1).username() + " " +
-                            baseSettings.operators.get(1).password());
+        connections[0].send("OPER " + baseSettings.operators().get(1).username() + " " +
+                            baseSettings.operators().get(1).password());
         assertArrayEquals(new String[]{
                 ":jircd-host 491 @127.0.0.1 :No O-lines for your host"
         }, connections[0].awaitMessage());

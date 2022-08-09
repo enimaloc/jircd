@@ -17,7 +17,7 @@ public class NickCommand {
         }
         ServerSettings settings = user.server().settings();
         if (!nickname.matches(Regex.NICKNAME.pattern()) ||
-            (settings.unsafeNickname.contains(nickname) && !settings.safeNet.contains(user.info().host()))) {
+            (settings.unsafeNickname().contains(nickname) && !settings.safeNet().contains(user.info().host()))) {
             user.send(Message.ERR_ERRONEUSNICKNAME.client(user.info()).addFormat("nick", nickname));
             return;
         }

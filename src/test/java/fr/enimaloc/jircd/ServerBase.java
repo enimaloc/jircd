@@ -13,15 +13,13 @@ import fr.enimaloc.jircd.server.ServerSettings;
 import java.io.IOException;
 import java.lang.reflect.Modifier;
 import java.net.BindException;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  *
@@ -39,22 +37,27 @@ public class ServerBase {
     protected        JIRCD          server;
     protected static Logger         logger = LoggerFactory.getLogger(ServerBase.class);
 
-    protected void init() {
-        baseSettings             = new ServerSettings();
-        baseSettings.motd        = new String[0];
-        baseSettings.host        = "jircd-host";
-        baseSettings.networkName = "JIRCD";
-        baseSettings.pass        = "jircd-pass";
-        baseSettings.pingTimeout = TimeUnit.DAYS.toMillis(1);
-        baseSettings.operators   = new ArrayList<>(List.of(
-                new ServerSettings.Operator("oper", "*", "oper"),
-                new ServerSettings.Operator("googleOper", "google", "pass")
-        ));
+    protected ServerSettings.Builder buildSettings() {
+        return new ServerSettings.Builder()
+                .motd(new String[0])
+                .host("jircd-host")
+                .networkName("JIRCD")
+                .pass("jircd-pass")
+                .pingTimeout(TimeUnit.DAYS.toMillis(1))
+                .operators(
+                        new ServerSettings.Operator("oper", "*", "oper"),
+                        new ServerSettings.Operator("googleOper", "google", "pass")
+                 );
+    }
 
-        logger.info("Creating server with settings: {}", baseSettings);
+    protected void init() {
+        ServerSettings.Builder builder = buildSettings();
+
+        ServerSettings tmp = builder.build();
+        logger.info("Creating server with settings: {}", tmp);
         while (server == null) {
             try {
-                server     = new JIRCD(baseSettings.copy()) {
+                server     = new JIRCD(tmp) {
                     @Override
                     public void shutdown() {
                         logger.info("Stopping server...");
@@ -68,11 +71,12 @@ public class ServerBase {
                     }
                 };
                 attrLength = (int) Math.max(Math.ceil(server.supportAttribute().length() / 13.), 1);
+                baseSettings = server.settings().copy();
                 break;
             } catch (BindException ignored) {
                 int newPort = new Random().nextInt(1000) + 1024;
-                logger.warn("Port {} is currently used, replaced with {}", baseSettings.port, newPort);
-                baseSettings.port = newPort;
+                logger.warn("Port {} is currently used, replaced with {}", baseSettings.port(), newPort);
+                tmp = builder.port(newPort).build();
             } catch (IOException e) {
                 fail("Can't start IRCServer", e);
                 break;

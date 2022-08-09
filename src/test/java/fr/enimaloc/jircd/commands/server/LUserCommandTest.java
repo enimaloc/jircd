@@ -77,8 +77,8 @@ class LUserCommandTest extends ServerCommandBase {
 
     @Test
     void luserTestWithOper() {
-        connections[0].send("OPER " + baseSettings.operators.get(0).username() + " " +
-                            baseSettings.operators.get(0).password());
+        connections[0].send("OPER " + baseSettings.operators().get(0).username() + " " +
+                            baseSettings.operators().get(0).password());
         connections[0].ignoreMessage();
         assumeTrue(waitFor(() -> server.users().size() > 0));
         assumeTrue(server.users().get(0).modes().oper());

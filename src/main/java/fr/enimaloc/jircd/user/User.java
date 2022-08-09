@@ -19,7 +19,7 @@ import org.slf4j.LoggerFactory;
 
 public class User extends Thread {
 
-    private final Socket           socket;
+    private final Socket socket;
     private final Timer            pingTimer;
     private final BufferedReader   input;
     private final DataOutputStream output;
@@ -36,10 +36,10 @@ public class User extends Thread {
 
     public User(JIRCD server, Socket socket) throws IOException {
         super("Socket-Connection-" + socket.getInetAddress().getHostAddress());
-        this.server   = server;
+        this.server = server;
         this.socket   = socket;
-        this.state    = server.settings().pass.isEmpty() ? UserState.CONNECTED : UserState.REGISTRATION;
-        this.nextPing = System.currentTimeMillis() + server.settings().pingTimeout;
+        this.state    = server.settings().pass().isEmpty() ? UserState.CONNECTED : UserState.REGISTRATION;
+        this.nextPing = System.currentTimeMillis() + server.settings().pingTimeout();
         this.input    = new BufferedReader(new InputStreamReader(socket.getInputStream()));
         this.output   = new DataOutputStream(socket.getOutputStream());
         this.info     = new UserInfo(this, server.settings());
@@ -51,10 +51,10 @@ public class User extends Thread {
             public void run() {
                 if (System.currentTimeMillis() >= nextPing && !pingSent) {
                     logger.debug("Sent 'PING' to {}", info.host());
-                    send("PING :" + server.settings().host);
+                    send("PING :" + server.settings().host());
                     pingSent = true;
                 }
-                if (pingSent && System.currentTimeMillis() >= nextPing + server.settings().timeout) {
+                if (pingSent && System.currentTimeMillis() >= nextPing + server.settings().timeout()) {
                     terminate("Timed out");
                 }
             }
@@ -71,8 +71,8 @@ public class User extends Thread {
                 if (line != null) {
                     logger.trace("Handle '{}'", line);
                     lastActivity = System.currentTimeMillis();
-                    nextPing = System.currentTimeMillis() + server.settings().pingTimeout;
-                    pingSent = false;
+                    nextPing     = System.currentTimeMillis() + server.settings().pingTimeout();
+                    pingSent     = false;
                     logger.trace("Rescheduled ping for {} to {}", this.info.host(),
                                  new SimpleDateFormat().format(new Date(nextPing)));
                     process(line, false);
@@ -90,7 +90,7 @@ public class User extends Thread {
     }
 
     public void send(Message message) {
-        send(message.format(server.settings().host));
+        send(message.format(server.settings().host()));
     }
 
     public void send(String raw) {
@@ -182,7 +182,7 @@ public class User extends Thread {
     public void finishRegistration() {
         state = UserState.LOGGED;
         send(Message.RPL_WELCOME.client(info)
-                                .addFormat("network", server.settings().networkName)
+                                .addFormat("network", server.settings().networkName())
                                 .addFormat("nick", info.nickname()));
         send(Message.RPL_YOURHOST.client(info)
                                  .addFormat("servername", Constant.NAME)

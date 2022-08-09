@@ -57,12 +57,12 @@ public class TopicCommand {
 
         Optional<Channel.Topic> topicOpt = channel.topic();
         if (topicOpt.isEmpty()) {
-            channel.broadcast(user.server().settings().host,
+            channel.broadcast(user.server().settings().host(),
                               Message.RPL_NOTOPIC.client(user.info()).addFormat("channel", channelName));
             return;
         }
         Channel.Topic topicObj = topicOpt.get();
-        channel.broadcast(user.server().settings().host,
+        channel.broadcast(user.server().settings().host(),
                           Message.RPL_TOPIC.client(user.info()).addFormat("channel", channelName)
                                            .addFormat("topic", topicObj.topic()));
     }

@@ -21,9 +21,9 @@ public class LinksCommand {
     public void execute(User user) {
         user.send(Message.RPL_LINKS.client(user.info())
                                    .addFormat("mask", "*")
-                                   .addFormat("server", user.server().settings().host)
+                                   .addFormat("server", user.server().settings().host())
                                    .addFormat("hopcount", "0")
-                                   .addFormat("serverinfo", user.server().settings().description));
+                                   .addFormat("serverinfo", user.server().settings().description()));
         user.send(Message.RPL_ENDOFLINKS.client(user.info())
                                         .addFormat("mask", "*"));
     }

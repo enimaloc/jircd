@@ -153,7 +153,7 @@ public class JIRCD extends Thread {
                 null,
                 0,
                 0,
-                settings.networkName,
+                settings.networkName(),
                 31,
                 null,
                 false,
@@ -164,7 +164,7 @@ public class JIRCD extends Thread {
                 18
         );
 
-        this.serverSocket = new ServerSocket(settings.port);
+        this.serverSocket = new ServerSocket(settings.port());
         this.start();
     }
 
@@ -184,7 +184,7 @@ public class JIRCD extends Thread {
 
     @Override
     public void run() {
-        logger.info("Listening on port {}", settings.port);
+        logger.info("Listening on port {}", settings.port());
         while (!this.isInterrupted()) {
             try {
                 User user = new User(JIRCD.this, serverSocket.accept());

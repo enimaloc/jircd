@@ -34,6 +34,7 @@ dependencies {
     implementation 'io.prometheus:simpleclient_hotspot:0.15.0'
 
     implementation 'com.github.davidmoten:geo:0.8.0'
+    implementation 'org.jetbrains:annotations:20.1.0'
 
     testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.8.2'
     testImplementation 'org.junit.jupiter:junit-jupiter-api:5.8.2'

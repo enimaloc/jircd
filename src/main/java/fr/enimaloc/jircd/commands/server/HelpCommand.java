@@ -21,7 +21,7 @@ public class HelpCommand {
     public void execute(User user) {
         user.send(Message.ERR_HELPNOTFOUND.client(user.info())
                                           .addFormat("subject", "\0")
-                                          .format(user.server().settings().host)
+                                          .format(user.server().settings().host())
                                           .replace("\0 ", ""));
     }
 

@@ -21,7 +21,7 @@ class NickCommandTest extends ConnectionCommandBase {
 
     @Test
     void nickTest() {
-        connections[0].send("PASS " + baseSettings.pass);
+        baseSettings.pass().ifPresent(pass -> connections[0].send("PASS " + pass));
 
         connections[0].send("NICK bob");
         assumeTrue(waitFor(() -> server.users().size() > 0));
@@ -39,7 +39,7 @@ class NickCommandTest extends ConnectionCommandBase {
 
     @Test
     void incorrectLengthNickTest() {
-        connections[0].send("PASS " + baseSettings.pass);
+        baseSettings.pass().ifPresent(pass -> connections[0].send("PASS " + pass));
         String nickname = getRandomString(50);
         connections[0].send("NICK " + nickname);
         assertArrayEquals(new String[]{
@@ -49,7 +49,7 @@ class NickCommandTest extends ConnectionCommandBase {
 
     @Test
     void incorrectNickTest() {
-        connections[0].send("PASS " + baseSettings.pass);
+        baseSettings.pass().ifPresent(pass -> connections[0].send("PASS " + pass));
         String nickname = getRandomString(7, 160, 255, i -> true);
         connections[0].send("NICK " + nickname);
         assertArrayEquals(new String[]{
@@ -60,8 +60,8 @@ class NickCommandTest extends ConnectionCommandBase {
     @Test
     void duplicateNickTest() {
         addConnections(1);
-        connections[0].send("PASS " + baseSettings.pass);
-        connections[1].send("PASS " + baseSettings.pass);
+        baseSettings.pass().ifPresent(pass -> connections[0].send("PASS " + pass));
+        baseSettings.pass().ifPresent(pass -> connections[1].send("PASS " + pass));
         connections[0].send("NICK dup");
         connections[1].ignoreMessage();
         connections[1].send("NICK dup");
@@ -72,8 +72,8 @@ class NickCommandTest extends ConnectionCommandBase {
 
     @Test
     void unsafeNickWithSafenetTest() {
-        connections[0].send("PASS " + baseSettings.pass);
-        String nick = ListUtils.getRandom(baseSettings.unsafeNickname);
+        baseSettings.pass().ifPresent(pass -> connections[0].send("PASS " + pass));
+        String nick = ListUtils.getRandom(baseSettings.unsafeNickname());
         connections[0].send("NICK " + nick);
 
         assumeTrue(waitFor(() -> server.users().size() > 0));
@@ -91,8 +91,8 @@ class NickCommandTest extends ConnectionCommandBase {
 
     @Test
     void unsafeNickWithUnsafenetTest() {
-        connections[0].send("PASS " + baseSettings.pass);
-        String nick = ListUtils.getRandom(baseSettings.unsafeNickname);
+        baseSettings.pass().ifPresent(pass -> connections[0].send("PASS " + pass));
+        String nick = ListUtils.getRandom(baseSettings.unsafeNickname());
 
         assumeTrue(waitFor(() -> server.users().size() > 0));
         UserInfo info = server.users().get(0).info();

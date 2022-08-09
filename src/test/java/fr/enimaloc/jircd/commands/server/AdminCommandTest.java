@@ -24,13 +24,17 @@ class AdminCommandTest extends ServerCommandBase {
         }, connections[0].awaitMessage());
     }
 
-    @Test
-    void adminTest() {
-        server.settings().admin = new ServerSettings.Admin(
+    @Override
+    protected ServerSettings.Builder buildSettings() {
+        return super.buildSettings().admin(new ServerSettings.Admin(
                 "Location 1",
                 "Location 2",
                 "jircd@local.host"
-        );
+        ));
+    }
+
+    @Test
+    void adminTest() {
         connections[0].send("ADMIN");
 
         assertArrayEquals(new String[]{

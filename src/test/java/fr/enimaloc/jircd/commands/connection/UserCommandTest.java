@@ -20,7 +20,7 @@ class UserCommandTest extends ConnectionCommandBase {
 
     @Test
     void userTest() {
-        connections[0].send("PASS " + baseSettings.pass);
+        baseSettings.pass().ifPresent(pass -> connections[0].send("PASS " + pass));
         connections[0].send("USER bobby 0 * :Mobbye Plav");
         assumeTrue(waitFor(() -> server.users().size() > 0));
         UserInfo info = server.users().get(0).info();
@@ -36,10 +36,10 @@ class UserCommandTest extends ConnectionCommandBase {
 
     @Test
     void alreadyRegisteredUserTest() {
-        connections[0].send("PASS " + baseSettings.pass);
+        baseSettings.pass().ifPresent(pass -> connections[0].send("PASS " + pass));
         connections[0].send("NICK bob");
         connections[0].send("USER bobby 0 * :Mobby Plav");
-        connections[0].ignoreMessage(6 + attrLength + baseSettings.motd.length);
+        connections[0].ignoreMessage(6 + attrLength + baseSettings.motd().length);
         connections[0].send("USER bob 0 * :Mobba Plav");
         assertArrayEquals(new String[]{
                 ":jircd-host 462 bob :You may not reregister"

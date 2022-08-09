@@ -32,7 +32,7 @@ class RestartCommandTest extends OperatorCommandBase {
         connections[0].send("RESTART");
         assertTrue(waitFor(server::isShutdown, 5, TimeUnit.MINUTES));
         assertTrue(waitFor(server::isInterrupted, 1, TimeUnit.MINUTES));
-        assertTrue(waitFor(() -> !connections[0].testConnection(baseSettings.port)));
+        assertTrue(waitFor(() -> !connections[0].testConnection(baseSettings.port())));
         assertTrue(waitFor(() -> {
             try {
                 connections[0] = createConnection();

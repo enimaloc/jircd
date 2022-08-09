@@ -21,7 +21,7 @@ class WallOpsCommandTest extends OptionalCommandBase {
 
         assumeTrue(getUser("bob").isPresent());
         User bob = getUser("bob").get();
-        bob.info().setOper(baseSettings.operators.get(0));
+        bob.info().setOper(baseSettings.operators().get(0));
         assumeTrue(bob.modes().oper());
 
         connections[1].createUser("john", "John Doe");
