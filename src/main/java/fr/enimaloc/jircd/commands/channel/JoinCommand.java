@@ -1,12 +1,13 @@
 package fr.enimaloc.jircd.commands.channel;
 
+import fr.enimaloc.jircd.channel.Channel;
+import fr.enimaloc.jircd.commands.Command;
 import fr.enimaloc.jircd.message.Mask;
 import fr.enimaloc.jircd.message.Message;
-import fr.enimaloc.jircd.channel.Channel;
 import fr.enimaloc.jircd.message.Regex;
-import fr.enimaloc.jircd.commands.Command;
 import fr.enimaloc.jircd.user.User;
 import java.lang.reflect.InvocationTargetException;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Command(name = "join")
@@ -25,69 +26,78 @@ public class JoinCommand {
                     "PART " + user.channels().stream().map(Channel::name).collect(Collectors.joining(",")));
             return;
         }
-        String[] channels = new String[1];
-        String[] passwds  = new String[1];
-        if (channelsRaw.contains(",")) {
-            channels = channelsRaw.split(",");
-        } else {
-            channels[0] = channelsRaw;
-        }
-        if (passwdRaw.contains(",")) {
-            passwds = new String[channels.length];
-            String[] temp = passwdRaw.split(",");
-            System.arraycopy(temp, 0, passwds, 0, temp.length);
-        } else if (passwdRaw.isEmpty() || passwdRaw.isBlank()) {
-            passwds = new String[channels.length];
-        } else {
-            passwds[0] = passwdRaw;
-        }
-        for (int i = 0; i < channels.length; i++) {
-            String channel = channels[i];
-            String passwd  = passwds[i];
-            if (!Regex.CHANNEL.matcher(channel).matches()) {
-                user.send(Message.ERR_NOSUCHCHANNEL.client(user.info()).addFormat("channel", channel));
-                continue;
-            }
-            Channel channelObj = user.server()
-                                     .channels()
-                                     .stream()
-                                     .filter(c -> c.name().equals(channel))
-                                     .findFirst()
-                                     .orElseGet(() -> {
-                                         Channel temp = new Channel(user, channel);
-                                         user.server().originalChannels().add(temp);
-                                         return temp;
-                                     });
-            if (user.channels().size() >= user.server().supportAttribute().channelAttribute().channelLen()) {
-                user.send(Message.ERR_TOOMANYCHANNELS.client(user.info()).addFormat("channel", channel));
-                continue;
-            }
-            if (channelObj.modes().password().isPresent() && !channelObj.modes().password().get().equals(passwd)) {
-                user.send(Message.ERR_BADCHANNELKEY.client(user.info()).addFormat("channel", channel));
-                continue;
-            }
-            if (channelObj.modes()
-                          .bans()
-                          .stream()
-                          .anyMatch(mask -> new Mask(mask).toPattern().matcher(user.info().full()).matches()) &&
-                channelObj.modes()
-                          .except()
-                          .stream()
-                          .noneMatch(mask -> new Mask(mask).toPattern().matcher(user.info().full()).matches())) {
-                user.send(Message.ERR_BANNEDFROMCHAN.client(user.info()).addFormat("channel", channel));
-                continue;
-            }
-            if (channelObj.users().size() >= channelObj.modes().limit().orElse(Integer.MAX_VALUE)) {
-                user.send(Message.ERR_CHANNELISFULL.client(user.info()).addFormat("channel", channel));
-                continue;
-            }
-            if (channelObj.modes().inviteOnly()) {
-                user.send(Message.ERR_INVITEONLYCHAN.client(user.info()).addFormat("channel", channel));
-                continue;
-            }
-
-            channelObj.addUser(user);
+        for (Couple couple : couples(channelsRaw, passwdRaw)) {
+            actionPerChannel(user, couple);
         }
     }
 
+    private static void actionPerChannel(User user, Couple couple) {
+        if (!Regex.CHANNEL.matcher(couple.name()).matches()) {
+            user.send(Message.ERR_NOSUCHCHANNEL.client(user.info()).addFormat("channel", couple.name()));
+            return;
+        }
+
+        Channel channelObj = user.server()
+                                 .channels()
+                                 .stream()
+                                 .filter(c -> c.name().equals(couple.name()))
+                                 .findFirst()
+                                 .orElseGet(() -> {
+                                     Channel temp = new Channel(user, couple.name());
+                                     user.server().originalChannels().add(temp);
+                                     return temp;
+                                 });
+
+        Optional<Message> error = invalid(user, couple, channelObj);
+        if (error.isPresent()) {
+            user.send(error.get().client(user.info()).addFormat("channel", couple.name()));
+            return;
+        }
+
+        channelObj.addUser(user);
+    }
+
+    private static Optional<Message> invalid(User user, Couple couple, Channel channelObj) {
+        Message error = null;
+        if (user.channels().size() >= user.server().supportAttribute().channelAttribute().channelLen()) {
+            error = Message.ERR_TOOMANYCHANNELS;
+        }
+        if (channelObj.modes().password().isPresent() && !channelObj.modes().password().equals(couple.password())) {
+            error = Message.ERR_BADCHANNELKEY;
+        }
+        if (channelObj.modes()
+                      .bans()
+                      .stream()
+                      .anyMatch(mask -> new Mask(mask).toPattern().matcher(user.info().full()).matches()) &&
+            channelObj.modes()
+                      .except()
+                      .stream()
+                      .noneMatch(mask -> new Mask(mask).toPattern().matcher(user.info().full()).matches())) {
+            error = Message.ERR_BANNEDFROMCHAN;
+        }
+        if (channelObj.users().size() >= channelObj.modes().limit().orElse(Integer.MAX_VALUE)) {
+            error = Message.ERR_CHANNELISFULL;
+        }
+        if (channelObj.modes().inviteOnly()) {
+            error = Message.ERR_INVITEONLYCHAN;
+        }
+        return Optional.ofNullable(error);
+    }
+
+    Couple[] couples(String channelsRaw, String passwdRaw) {
+        String[] channels = channelsRaw.split(",");
+        String[] passwds  = passwdRaw.split(",");
+
+        Couple[] couples = new Couple[channels.length];
+        for (int i = 0; i < couples.length; i++) {
+            couples[i] = new Couple(channels[i], i < passwds.length ? passwds[i] : null);
+        }
+        return couples;
+    }
+
+    record Couple(String name, String password0) {
+        public Optional<String> password() {
+            return Optional.ofNullable(password0);
+        }
+    }
 }
