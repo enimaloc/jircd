@@ -256,7 +256,7 @@ public class JIRCD extends Thread {
         return commands;
     }
 
-    public TreeMap<String, Integer> commandUsage() {
+    public SortedMap<String, Integer> commandUsage() {
         return new TreeMap<>(commandUsage);
     }
 
