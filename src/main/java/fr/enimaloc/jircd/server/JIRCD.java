@@ -38,6 +38,58 @@ import org.slf4j.LoggerFactory;
 
 public class JIRCD extends Thread {
 
+    public static final List<Object> BASE_COMMANDS = List.of(
+            // Connection
+            new PassCommand(),
+            new NickCommand(),
+            new UserCommand(),
+            new PingCommand(),
+//                new PongCommand(), // Included in client thread
+            new OperCommand(),
+            new QuitCommand(),
+
+            // Channel Operations
+            new JoinCommand(),
+            new PartCommand(),
+            new TopicCommand(),
+            new NamesCommand(),
+            new ListCommand(),
+            new KickCommand(),
+
+            // Server Queries and Commands
+            new MotdCommand(),
+            new VersionCommand(),
+            new AdminCommand(),
+            new ConnectCommand(),
+            new LUserCommand(),
+            new TimeCommand(),
+            new StatsCommand(),
+            new HelpCommand(),
+            new InfoCommand(),
+            new ModeCommand(),
+
+            // Sending Messages
+            new PrivmsgCommand(),
+            new NoticeCommand(),
+
+            // User Based Queries
+            new WhoCommand(),
+            new WhoisCommand(),
+            new WhowasCommand(),
+
+            // Operator Messages
+            new KillCommand(),
+            new RehashCommand(),
+            new RestartCommand(),
+            new SQuitCommand(),
+
+            // Optional Message
+            new AwayCommand(),
+            new LinksCommand(),
+            new UserhostCommand(),
+            new WallOpsCommand()
+    );
+
     private final Logger logger = LoggerFactory.getLogger(JIRCD.class);
 
     protected final ServerSocket                                                         serverSocket;
@@ -54,88 +106,7 @@ public class JIRCD extends Thread {
     public JIRCD(ServerSettings settings) throws IOException {
         super("Server-Receiver");
         this.settings = settings;
-        for (Object cmd : Arrays.asList(
-                // Connection
-                new PassCommand(),
-                new NickCommand(),
-                new UserCommand(),
-                new PingCommand(),
-//                new PongCommand(), // Included in client thread
-                new OperCommand(),
-                new QuitCommand(),
-
-                // Channel Operations
-                new JoinCommand(),
-                new PartCommand(),
-                new TopicCommand(),
-                new NamesCommand(),
-                new ListCommand(),
-                new KickCommand(),
-
-                // Server Queries and Commands
-                new MotdCommand(),
-                new VersionCommand(),
-                new AdminCommand(),
-                new ConnectCommand(),
-                new LUserCommand(),
-                new TimeCommand(),
-                new StatsCommand(),
-                new HelpCommand(),
-                new InfoCommand(),
-                new ModeCommand(),
-
-                // Sending Messages
-                new PrivmsgCommand(),
-                new NoticeCommand(),
-
-                // User Based Queries
-                new WhoCommand(),
-                new WhoisCommand(),
-                new WhowasCommand(),
-
-                // Operator Messages
-                new KillCommand(),
-                new RehashCommand(),
-                new RestartCommand(),
-                new SQuitCommand(),
-
-                // Optional Message
-                new AwayCommand(),
-                new LinksCommand(),
-                new UserhostCommand(),
-                new WallOpsCommand()
-        )) {
-            Class<?> clazz         = cmd.getClass();
-            String   nameByAClazz  = Command.DEFAULT_STRING;
-            boolean  clazzTrailing = false;
-            if (clazz.isAnnotationPresent(Command.class)) {
-                Command annotation = clazz.getAnnotation(Command.class);
-                nameByAClazz  = annotation.name();
-                clazzTrailing = annotation.trailing();
-            }
-            if (nameByAClazz.equals(Command.DEFAULT_STRING)) {
-                nameByAClazz = clazz.getSimpleName();
-            }
-            for (Method method : clazz.getDeclaredMethods()) {
-                if (method.isAnnotationPresent(Command.class)) {
-                    Command annotation    = method.getAnnotation(Command.class);
-                    String  nameByAMethod = annotation.name();
-                    boolean asTrailing    = clazzTrailing || annotation.trailing();
-                    if (nameByAMethod.equals(Command.DEFAULT_STRING)) {
-                        nameByAMethod = nameByAClazz;
-                    }
-                    Map<Command.CommandIdentifier, Command.CommandIdentity> map = commands.getOrDefault(
-                            nameByAMethod.toUpperCase(),
-                            new HashMap<>()
-                    );
-                    map.put(new Command.CommandIdentifier(
-                                    method.getParameterCount() - (asTrailing ? 2 : 1), asTrailing),
-                            new Command.CommandIdentity(cmd, method));
-                    commands.put(nameByAMethod.toUpperCase(), map);
-                    commandUsage.put(nameByAMethod.toUpperCase(), 0);
-                }
-            }
-        }
+        BASE_COMMANDS.forEach(this::buildCommandFromClazz);
 
         supportAttribute = new SupportAttribute(
                 200,
@@ -166,6 +137,39 @@ public class JIRCD extends Thread {
 
         this.serverSocket = new ServerSocket(settings.port());
         this.start();
+    }
+
+    private void buildCommandFromClazz(Object cmd) {
+        Class<?> clazz         = cmd.getClass();
+        String   nameByAClazz  = Command.DEFAULT_STRING;
+        boolean  clazzTrailing = false;
+        if (clazz.isAnnotationPresent(Command.class)) {
+            Command annotation = clazz.getAnnotation(Command.class);
+            nameByAClazz  = annotation.name();
+            clazzTrailing = annotation.trailing();
+        }
+        if (nameByAClazz.equals(Command.DEFAULT_STRING)) {
+            nameByAClazz = clazz.getSimpleName();
+        }
+        for (Method method : clazz.getDeclaredMethods()) {
+            if (method.isAnnotationPresent(Command.class)) {
+                Command annotation    = method.getAnnotation(Command.class);
+                String  nameByAMethod = annotation.name();
+                boolean asTrailing    = clazzTrailing || annotation.trailing();
+                if (nameByAMethod.equals(Command.DEFAULT_STRING)) {
+                    nameByAMethod = nameByAClazz;
+                }
+                Map<Command.CommandIdentifier, Command.CommandIdentity> map = commands.getOrDefault(
+                        nameByAMethod.toUpperCase(),
+                        new HashMap<>()
+                );
+                map.put(new Command.CommandIdentifier(
+                                method.getParameterCount() - (asTrailing ? 2 : 1), asTrailing),
+                        new Command.CommandIdentity(cmd, method));
+                commands.put(nameByAMethod.toUpperCase(), map);
+                commandUsage.put(nameByAMethod.toUpperCase(), 0);
+            }
+        }
     }
 
     public static JIRCD newInstance() {
