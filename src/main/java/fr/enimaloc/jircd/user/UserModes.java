@@ -62,6 +62,21 @@ public class UserModes {
                (wallops() ? "w" : "");
     }
 
+    public void apply(String rawMode, Runnable onUnknown) {
+        boolean add = true;
+        for (char c : rawMode.toCharArray()) {
+            switch (c) {
+                case '+', '-' -> add = c == '+';
+                case 'i' -> invisible(add);
+                case 'o' -> oper(false);
+                case 'O' -> localOper(false);
+//                    case 'r' -> registered(add);
+                case 'w' -> wallops(add);
+                default -> onUnknown.run();
+            }
+        }
+    }
+
     public String prefix() {
         return (localOper() || oper() ? "@" : "");
     }

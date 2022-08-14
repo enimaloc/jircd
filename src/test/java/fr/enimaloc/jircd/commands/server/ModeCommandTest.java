@@ -172,7 +172,7 @@ class ModeCommandTest extends ServerCommandBase {
             connections[0].send("JOIN #bob");
             connections[0].ignoreMessage(3);
             Optional<Channel> channelOpt = getChannel("#bob");
-            assumeTrue(channelOpt.isPresent());
+            assumeTrue(waitFor(channelOpt::isPresent));
             this.channel = channelOpt.get();
         }
 
@@ -306,11 +306,10 @@ class ModeCommandTest extends ServerCommandBase {
             @Test
             void modeBanTest() {
                 channel.modes().bans().add("john!*@*");
-                assumeFalse(channel.modes().bans().isEmpty());
-                connections[0].send("MODE #bob -b john!*@*");
+                assumeFalse(channel.modes().bans().isEmpty());;
                 assertArrayEquals(new String[]{
                         ":bob MODE #bob -b john!*@*"
-                }, connections[0].awaitMessage());
+                }, connections[0].send("MODE #bob -b john!*@*", 1));
                 assertTrue(channel.modes().bans().isEmpty());
             }
 
@@ -328,13 +327,13 @@ class ModeCommandTest extends ServerCommandBase {
             @Test
             void modeLimitTest() {
                 channel.modes().limit(5);
-                assumeFalse(channel.modes().limit().isEmpty());
-                assumeTrue(channel.modes().limit().getAsInt() == 5);
+                assumeTrue(waitFor(() -> channel.modes().limit().isPresent()));
+                assumeTrue(waitFor(() -> channel.modes().limit().getAsInt() == 5));
                 connections[0].send("MODE #bob -l 5");
                 assertArrayEquals(new String[]{
                         ":bob MODE #bob -l 5"
                 }, connections[0].awaitMessage());
-                assumeTrue(channel.modes().limit().isEmpty());
+                assertTrue(channel.modes().limit().isEmpty());
             }
 
             @Test
@@ -362,12 +361,12 @@ class ModeCommandTest extends ServerCommandBase {
             @Test
             void modeKeyChannelTest() {
                 channel.modes().password("keypass");
-                assumeFalse(channel.modes().password().isEmpty());
+                assumeTrue(waitFor(() -> channel.modes().password().isPresent()));
                 connections[0].send("MODE #bob -k keypass");
                 assertArrayEquals(new String[]{
                         ":bob MODE #bob -k *"
                 }, connections[0].awaitMessage());
-                assertTrue(channel.modes().password().isEmpty());
+                assertTrue(waitFor(() -> channel.modes().password().isEmpty()));
             }
 
             @Test
