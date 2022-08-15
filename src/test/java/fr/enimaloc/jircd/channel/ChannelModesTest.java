@@ -6,14 +6,13 @@ import java.util.OptionalInt;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assumptions.assumeFalse;
 
 class ChannelModesTest {
 
     @Test
     void password() {
-        ChannelModes channelModes = new ChannelModes(
-                null, null, null, "password", 0, false, false, false, false, false
-        );
+        ChannelModes channelModes = new ChannelModes().password("password");
         assertEquals(Optional.of("password"), channelModes.password());
         assertTrue(channelModes.password().isPresent());
         assertEquals("k", channelModes.modesString());
@@ -22,9 +21,7 @@ class ChannelModesTest {
 
     @Test
     void limit() {
-        ChannelModes channelModes = new ChannelModes(
-                null, null, null, null, 1, false, false, false, false, false
-        );
+        ChannelModes channelModes = new ChannelModes().limit(1);
         assertEquals(OptionalInt.of(1), channelModes.limit());
         assertTrue(channelModes.limit().isPresent());
         assertEquals("l", channelModes.modesString());
@@ -33,9 +30,7 @@ class ChannelModesTest {
 
     @Test
     void inviteOnly() {
-        ChannelModes channelModes = new ChannelModes(
-                null, null, null, null, 0, false, true, false, false, false
-        );
+        ChannelModes channelModes = new ChannelModes().inviteOnly(true);
         assertTrue(channelModes.inviteOnly());
         assertEquals("i", channelModes.modesString());
         assertEquals("", channelModes.modesArguments());
@@ -43,9 +38,7 @@ class ChannelModesTest {
 
     @Test
     void secret() {
-        ChannelModes channelModes = new ChannelModes(
-                null, null, null, null, 0, false, false, true, false, false
-        );
+        ChannelModes channelModes = new ChannelModes().secret(true);
         assertTrue(channelModes.secret());
         assertEquals("s", channelModes.modesString());
         assertEquals("", channelModes.modesArguments());
@@ -53,48 +46,31 @@ class ChannelModesTest {
 
     @Test
     void bans() {
-        ChannelModes channelModes = new ChannelModes(
-                null,
-                new ArrayList<>() {{add("b!an@ed");}},
-                null,
-                null,
-                0,
-                false,
-                false,
-                false,
-                false,
-                false
-        );
-        assertFalse(channelModes.bans().isEmpty());
+        ChannelModes channelModes = new ChannelModes();
+        channelModes.bans().add("b!an@ed");
         assertEquals("b", channelModes.modesString());
         assertEquals("", channelModes.modesArguments());
     }
 
     @Test
     void moderate() {
-        ChannelModes channelModes = new ChannelModes(
-                null, null, null, null, 0, true, false, false, false, false
-        );
+        ChannelModes channelModes = new ChannelModes().moderate(true);
         assertTrue(channelModes.moderate());
         assertEquals("m", channelModes.modesString());
         assertEquals("", channelModes.modesArguments());
     }
 
     @Test
-    void _protected() {
-        ChannelModes channelModes = new ChannelModes(
-                null, null, null, null, 0, false, false, false, true, false
-        );
-        assertTrue(channelModes._protected());
+    void protected0() {
+        ChannelModes channelModes = new ChannelModes().protected0(true);
+        assertTrue(channelModes.protected0());
         assertEquals("t", channelModes.modesString());
         assertEquals("", channelModes.modesArguments());
     }
 
     @Test
     void noExternalMessage() {
-        ChannelModes channelModes = new ChannelModes(
-                null, null, null, null, 0, false, false, false, false, true
-        );
+        ChannelModes channelModes = new ChannelModes().noExternalMessage(true);
         assertTrue(channelModes.noExternalMessage());
         assertEquals("n", channelModes.modesString());
         assertEquals("", channelModes.modesArguments());
@@ -102,38 +78,16 @@ class ChannelModesTest {
 
     @Test
     void except() {
-        ChannelModes channelModes = new ChannelModes(
-                new ArrayList<>() {{add("e!xce@pt");}},
-                null,
-                null,
-                null,
-                0,
-                false,
-                false,
-                false,
-                false,
-                false
-        );
-        assertFalse(channelModes.except().isEmpty());
+        ChannelModes channelModes = new ChannelModes();
+        channelModes.except().add("e!xce@pt");
         assertEquals("e", channelModes.modesString());
         assertEquals("", channelModes.modesArguments());
     }
 
     @Test
     void invEx() {
-        ChannelModes channelModes = new ChannelModes(
-                null,
-                null,
-                new ArrayList<>() {{add("e!xem@pted");}},
-                null,
-                0,
-                false,
-                false,
-                false,
-                false,
-                false
-        );
-        assertFalse(channelModes.invEx().isEmpty());
+        ChannelModes channelModes = new ChannelModes();
+        channelModes.invEx().add("e!xem@pted");
         assertEquals("I", channelModes.modesString());
         assertEquals("", channelModes.modesArguments());
     }

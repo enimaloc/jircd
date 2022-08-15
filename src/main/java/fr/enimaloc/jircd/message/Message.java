@@ -1,5 +1,6 @@
 package fr.enimaloc.jircd.message;
 
+import fr.enimaloc.jircd.channel.Channel;
 import fr.enimaloc.jircd.user.UserInfo;
 import fr.enimaloc.enutils.classes.PatternEngine;
 import java.util.Arrays;
@@ -112,8 +113,10 @@ public class Message {
             new Message(":<source> 332 <client> <channel> :<topic>");
     public static final Message RPL_TOPICWHOTIME    =
             new Message(":<source> 333 <client> <channel> <nick> <setat>");
-    // TODO: 20/07/2022 - Add correctly RPL_WHOISACTUALLY, multiples answers ?
-    @Deprecated // see TODO above
+    /**
+     * @deprecated Add correctly RPL_WHOISACTUALLY, multiples answers ?
+     */
+    @Deprecated(since = "20/07/22") // TODO 20/07/2022
     public static final Message RPL_WHOISACTUALLY   =
             new Message(":<source> 338 <client> <nick> <actually>");
     public static final Message RPL_INVITELIST      =
@@ -220,6 +223,7 @@ public class Message {
     private final String                            base;
     private final boolean                           haveTrailing;
     private       UserInfo                          client;
+    private       String                            channel;
     private       Map<String, String>               format       = new HashMap<>();
     private       Object[]                          rawFormat    = new Object[0];
     private       String                            trailing;
@@ -236,6 +240,15 @@ public class Message {
 
     public Message client(UserInfo client) {
         this.client = client;
+        return this;
+    }
+
+    public Message channel(Channel channel) {
+        return this.channel(channel.name());
+    }
+
+    public Message channel(String channel) {
+        this.channel = channel;
         return this;
     }
 
@@ -268,6 +281,9 @@ public class Message {
         addFormat("source", source);
         if (client != null) {
             addFormat("client", client.format());
+        }
+        if (channel != null) {
+            addFormat("channel", channel);
         }
         return (PatternEngine.replaceTokens(Pattern.compile("<(.+?)>"), unknownToken, base.formatted(rawFormat), format) +
                (haveTrailing && trailing != null ? " :" + trailing : ""));

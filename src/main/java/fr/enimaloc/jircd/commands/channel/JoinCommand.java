@@ -33,7 +33,7 @@ public class JoinCommand {
 
     private static void actionPerChannel(User user, Couple couple) {
         if (!Regex.CHANNEL.matcher(couple.name()).matches()) {
-            user.send(Message.ERR_NOSUCHCHANNEL.client(user.info()).addFormat("channel", couple.name()));
+            user.send(Message.ERR_NOSUCHCHANNEL.client(user.info()).channel(couple.name()));
             return;
         }
 
@@ -50,7 +50,7 @@ public class JoinCommand {
 
         Optional<Message> error = invalid(user, couple, channelObj);
         if (error.isPresent()) {
-            user.send(error.get().client(user.info()).addFormat("channel", couple.name()));
+            user.send(error.get().client(user.info()).channel(couple.name()));
             return;
         }
 

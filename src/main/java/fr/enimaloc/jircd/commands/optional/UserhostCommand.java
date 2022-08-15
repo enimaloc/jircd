@@ -3,6 +3,8 @@ package fr.enimaloc.jircd.commands.optional;
 import fr.enimaloc.jircd.message.Message;
 import fr.enimaloc.jircd.commands.Command;
 import fr.enimaloc.jircd.user.User;
+import java.util.Arrays;
+import java.util.Objects;
 import java.util.Optional;
 
 @Command(name = "userhost")
@@ -31,10 +33,7 @@ public class UserhostCommand {
     @Command
     public void execute(User user, String a, String b, String c, String d, String e) {
         StringBuilder ret = new StringBuilder();
-        for (String nickname : new String[]{a, b, c, d, e}) {
-            if (nickname == null) {
-                continue;
-            }
+        for (String nickname : Arrays.stream(new String[]{a, b, c, d, e}).filter(Objects::nonNull).toArray(String[]::new)) {
             Optional<User> userOpt = user.server()
                                          .users()
                                          .stream()

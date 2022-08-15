@@ -28,7 +28,7 @@ public class KickCommand {
     @Command(trailing = true)
     public void execute(User user, String channelName, String users, String reason) {
         if (!Regex.CHANNEL.matcher(channelName).matches()) {
-            user.send(Message.ERR_NOSUCHCHANNEL.client(user.info()).addFormat("channel", channelName));
+            user.send(Message.ERR_NOSUCHCHANNEL.client(user.info()).channel(channelName));
             return;
         }
         Optional<Channel> channelOpt = user.channels()
@@ -36,13 +36,13 @@ public class KickCommand {
                                            .filter(channel -> channel.name().equals(channelName))
                                            .findFirst();
         if (channelOpt.isEmpty()) {
-            user.send(Message.ERR_NOTONCHANNEL.client(user.info()).addFormat("channel", channelName));
+            user.send(Message.ERR_NOTONCHANNEL.client(user.info()).channel(channelName));
             return;
         }
 
         Channel channelObj = channelOpt.get();
         if (!channelObj.isRanked(user, Channel.Rank.HALF_OPERATOR)) {
-            user.send(Message.ERR_CHANOPRIVSNEEDED.client(user.info()).addFormat("channel", channelName));
+            user.send(Message.ERR_CHANOPRIVSNEEDED.client(user.info()).channel(channelObj));
             return;
         }
 
@@ -57,17 +57,15 @@ public class KickCommand {
                                                .stream()
                                                .filter(user1 -> user1.info().nickname().equals(userName))
                                                .findFirst();
-            if (userOpt.isEmpty()) {
-                user.send(Message.ERR_USERNOTINCHANNEL.client(user.info())
-                                                      .addFormat("nick", userName)
-                                                      .addFormat("channel", channelName));
+            if (userOpt.isEmpty() || channelObj.isRanked(userOpt.get(), Channel.Rank.PROTECTED)) {
+                if (userOpt.isEmpty()) {
+                    user.send(Message.ERR_USERNOTINCHANNEL.client(user.info())
+                                                          .addFormat("nick", userName)
+                                                          .addFormat("channel", channelName));
+                }
                 continue;
             }
             User userObj = userOpt.get();
-            // Ignore protected user
-            if (channelObj.isRanked(userObj, Channel.Rank.PROTECTED)) {
-                continue;
-            }
             channelObj.broadcast(
                     ":%s KICK %s %s%s".formatted(user.info().format(),
                                                  channelName,

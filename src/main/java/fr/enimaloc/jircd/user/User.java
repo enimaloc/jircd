@@ -73,8 +73,10 @@ public class User extends Thread {
                     lastActivity = System.currentTimeMillis();
                     nextPing     = System.currentTimeMillis() + server.settings().pingTimeout();
                     pingSent     = false;
-                    logger.trace("Rescheduled ping for {} to {}", this.info.host(),
-                                 new SimpleDateFormat().format(new Date(nextPing)));
+                    if (logger.isTraceEnabled()) {
+                        logger.trace("Rescheduled ping for {} to {}", this.info.host(),
+                                     new SimpleDateFormat().format(new Date(nextPing)));
+                    }
                     process(line, false);
                 }
             } catch (IOException | InvocationTargetException | IllegalAccessException e) {
@@ -85,7 +87,9 @@ public class User extends Thread {
                 }
             }
         }
-        logger.trace("Interrupted thread for {}", info.format());
+        if (logger.isTraceEnabled()) {
+            logger.trace("Interrupted thread for {}", info.format());
+        }
         super.run();
     }
 
@@ -139,8 +143,7 @@ public class User extends Thread {
         String[] split   = line.contains(" ") ? line.split(" ", 2) : new String[]{line, ""};
         String   command = split[0].toUpperCase();
         String[] params  = split[1].contains(":") ? split[1].split(":", 2) : new String[]{split[1]};
-        String[] middle = params.length != 0 && !(params[0].isEmpty() || params[0].isBlank()) ? params[0].contains(
-                " ") ? params[0].split(" ") : new String[]{params[0]} : new String[0];
+        String[] middle = params.length != 0 && !(params[0].isEmpty() || params[0].isBlank()) ? params[0].split(" ") : new String[0];
         String trailing = params.length == 2 ? params[1] : null;
 
         if (!server.commands().containsKey(command)) {
@@ -195,7 +198,7 @@ public class User extends Thread {
                                .addFormat("version", Constant.VERSION)
                                .addFormat("available user modes", "")
                                .addFormat("available channel modes", ""));
-        VersionCommand.send_ISUPPORT(this);
+        VersionCommand.sendISUPPORT(this);
         try {
             process("MOTD");
         } catch (InvocationTargetException | IllegalAccessException e) {

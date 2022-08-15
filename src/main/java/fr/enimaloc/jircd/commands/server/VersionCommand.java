@@ -11,11 +11,11 @@ import java.util.regex.Pattern;
 @Command(name = "version")
 public class VersionCommand {
 
-    public static void send_ISUPPORT(User user) {
-        send_ISUPPORT(user, user.server());
+    public static void sendISUPPORT(User user) {
+        sendISUPPORT(user, user.server());
     }
 
-    public static void send_ISUPPORT(User user, JIRCD server) {
+    public static void sendISUPPORT(User user, JIRCD server) {
         List<Map<String, Object>> tokens = server.supportAttribute()
                                                  .asMapsWithLimit(13,
                                                                   (key, value) -> {
@@ -45,18 +45,18 @@ public class VersionCommand {
 
     private static String parseOptional(Object potentialOptional) {
         if (potentialOptional instanceof Optional) {
-            return parseOptional_((Optional<?>) potentialOptional);
-        } else if (potentialOptional instanceof OptionalInt) {
-            return parseOptional_((OptionalInt) potentialOptional);
+            return parseOptional0((Optional<?>) potentialOptional);
+        } else if (potentialOptional instanceof OptionalInt optInt) {
+            return parseOptional0(optInt);
         }
         return "=" + potentialOptional;
     }
 
-    private static String parseOptional_(@SuppressWarnings("OptionalUsedAsFieldOrParameterType") Optional<?> optional) {
+    private static String parseOptional0(@SuppressWarnings("OptionalUsedAsFieldOrParameterType") Optional<?> optional) {
         return optional.map(o -> "=" + o).orElse("");
     }
 
-    private static String parseOptional_(@SuppressWarnings("OptionalUsedAsFieldOrParameterType") OptionalInt optional) {
+    private static String parseOptional0(@SuppressWarnings("OptionalUsedAsFieldOrParameterType") OptionalInt optional) {
         return (optional.isPresent() ? "=" + optional.getAsInt() : "");
     }
 
@@ -87,6 +87,6 @@ public class VersionCommand {
                                      .addFormat("version", Constant.VERSION)
                                      .addFormat("server", server.settings().host())
                                      .addFormat("comments", ""));
-        send_ISUPPORT(user, server);
+        sendISUPPORT(user, server);
     }
 }

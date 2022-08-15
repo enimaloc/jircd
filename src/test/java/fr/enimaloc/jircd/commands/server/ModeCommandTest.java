@@ -279,7 +279,7 @@ class ModeCommandTest extends ServerCommandBase {
                 assertArrayEquals(new String[]{
                         ":bob MODE #bob +t"
                 }, connections[0].awaitMessage());
-                assertTrue(channel.modes()._protected());
+                assertTrue(channel.modes().protected0());
             }
 
             @Test
@@ -362,9 +362,9 @@ class ModeCommandTest extends ServerCommandBase {
             void modeKeyChannelTest() {
                 channel.modes().password("keypass");
                 assumeTrue(waitFor(() -> channel.modes().password().isPresent()));
-                connections[0].send("MODE #bob -k keypass");
+                connections[0].send("MODE #bob -k");
                 assertArrayEquals(new String[]{
-                        ":bob MODE #bob -k *"
+                        ":bob MODE #bob -k"
                 }, connections[0].awaitMessage());
                 assertTrue(waitFor(() -> channel.modes().password().isEmpty()));
             }
@@ -393,13 +393,13 @@ class ModeCommandTest extends ServerCommandBase {
 
             @Test
             void modeProtectedTopicTest() {
-                channel.modes()._protected(true);
-                assumeTrue(channel.modes()._protected());
+                channel.modes().protected0(true);
+                assumeTrue(channel.modes().protected0());
                 connections[0].send("MODE #bob -t");
                 assertArrayEquals(new String[]{
                         ":bob MODE #bob -t"
                 }, connections[0].awaitMessage());
-                assertFalse(channel.modes()._protected());
+                assertFalse(channel.modes().protected0());
             }
 
             @Test

@@ -41,8 +41,13 @@ public class StatsCommand {
                     ChronoUnit.SECONDS.between(serverObj.createdAt().toInstant(), ZonedDateTime.now())%60
             ));
             case 'y' -> user.send(Message.RPL_STATSLINKLINE.client(user.info()));
+            default -> noOp();
         }
         user.send(Message.RPL_ENDOFSTATS.addFormat("stats letter", Character.toUpperCase(queryS.toCharArray()[0])));
+    }
+
+    private void noOp() {
+        // Nothing to do
     }
 
 }

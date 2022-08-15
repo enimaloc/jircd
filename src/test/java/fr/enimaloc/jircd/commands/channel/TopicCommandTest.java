@@ -98,7 +98,7 @@ class TopicCommandTest extends CommandChannelBase {
         Optional<Channel> channelOpt = getChannel("#jircd");
         assertFalse(channelOpt.isEmpty());
         Channel channel = channelOpt.get();
-        channel.modes()._protected(true);
+        channel.modes().protected0(true);
 
         assumeFalse(channel.users().isEmpty());
         connections[1].createUser("john", "John Doe");

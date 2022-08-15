@@ -50,9 +50,11 @@ public class WhoCommand {
 
         for (User target : targets) {
             user.send(Message.RPL_WHOREPLY.client(user.info())
-                                          .addFormat("channel", target.channels().isEmpty()
-                                                  ? "*"
-                                                  : target.channels().get(0).name())
+                                          .channel(target.channels()
+                                                         .stream()
+                                                         .findFirst()
+                                                         .map(Channel::name)
+                                                         .orElse("*"))
                                           .addFormat("username", target.info().username())
                                           .addFormat("host", target.info().host().replaceFirst(":", "0:"))
                                           .addFormat("server", server.settings().host())
@@ -61,9 +63,11 @@ public class WhoCommand {
                                                                     .map(away -> "G")
                                                                     .orElse("H")
                                                               + (target.modes().oper() ? "*" : "")
-                                                              + (target.channels().isEmpty()
-                                                  ? ""
-                                                  : target.channels().get(0).prefix(target)))
+                                                              + (target.channels()
+                                                                       .stream()
+                                                                       .findFirst()
+                                                                       .map(channel -> channel.prefix(target))
+                                                                       .orElse("")))
                                           .addFormat("hopcount", 0)
                                           .addFormat("realname", target.info().realName()));
 

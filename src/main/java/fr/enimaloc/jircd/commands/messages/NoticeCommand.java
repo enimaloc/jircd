@@ -19,16 +19,7 @@ public class NoticeCommand {
 
     @Command(trailing = true)
     public void executeTrailing(User user, String targets, String trailing) {
-        for (String target : (targets + ",").split(",")) {
-            if (target.isEmpty()) {
-                continue;
-            }
-            if (Regex.CHANNEL.matcher(target.replaceFirst(Regex.CHANNEL_PREFIX.pattern(), "")).matches()) {
-                executeChannel(user, target, trailing);
-            } else if (Regex.NICKNAME.matcher(target).matches()) {
-                executeUser(user, target, trailing);
-            }
-        }
+        Dup.dup1(user, targets, trailing, this::executeChannel, this::executeUser);
     }
 
     private void executeChannel(User user, String target, String trailing) {
@@ -43,14 +34,7 @@ public class NoticeCommand {
             return;
         }
         Channel channel = channelOpt.get();
-        if ((channel.modes().bans().stream().anyMatch(mask -> new Mask(mask).toPattern()
-                                                                            .matcher(user.info().full())
-                                                                            .matches()) &&
-             channel.modes().except().stream().noneMatch(mask -> new Mask(mask).toPattern()
-                                                                               .matcher(user.info().full())
-                                                                               .matches())) ||
-            (channel.modes().noExternalMessage() && !channel.users().contains(user)) ||
-            (channel.modes().moderate() && !Regex.CHANNEL_PREFIX.matcher(channel.prefix(user) + user.modes().prefix()).matches())) {
+        if (Dup.restrained(channel, user)) {
             return;
         }
         Predicate<User> filter = u -> u != user;
@@ -74,6 +58,9 @@ public class NoticeCommand {
                         // fallthrough
                     case '~':
                         builder.append("~");
+                        // fallthrough
+                    default :
+                        break;
                 }
             }
             builder.append("]");

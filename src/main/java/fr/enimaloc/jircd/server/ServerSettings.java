@@ -66,11 +66,12 @@ public class ServerSettings {
         Arrays.stream(this.getClass().getDeclaredFields())
               .filter(copyIf.and(field -> !Modifier.isFinal(field.getModifiers())))
               .forEach(field -> {
-                  field.setAccessible(true);
-                  try {
-                      field.set(to, field.get(this));
-                  } catch (IllegalAccessException e) {
-                      logger.error(e.getLocalizedMessage(), e);
+                  if (field.trySetAccessible()) {
+                      try {
+                          field.set(to, field.get(this));
+                      } catch (IllegalAccessException e) {
+                          logger.error(e.getLocalizedMessage(), e);
+                      }
                   }
               });
         return to;
@@ -372,7 +373,6 @@ public class ServerSettings {
 
         public Builder host(@Nullable String host) {
             this.host = host;
-            System.out.println("host = " + host);
             return this;
         }
 

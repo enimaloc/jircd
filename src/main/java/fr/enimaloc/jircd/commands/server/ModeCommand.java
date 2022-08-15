@@ -41,17 +41,17 @@ public class ModeCommand {
                                            .filter(channel -> channel.name().equals(target))
                                            .findFirst();
         if (channelOpt.isEmpty()) {
-            user.send(Message.ERR_NOSUCHCHANNEL.client(user.info()).addFormat("channel", target));
+            user.send(Message.ERR_NOSUCHCHANNEL.client(user.info()).channel(target));
             return;
         }
         Channel channel = channelOpt.get();
         if (modeString == null) {
             user.send(Message.RPL_CHANNELMODEIS.client(user.info())
-                                               .addFormat("channel", target)
+                                               .channel(channel)
                                                .addFormat("modestring", channel.modes().modesString())
                                                .addFormat("mode arguments", channel.modes().modesArguments()));
             user.send(Message.RPL_CREATIONTIME.client(user.info())
-                                              .addFormat("channel", target)
+                                              .channel(channel)
                                               .addFormat("creationtime", channel.createAt()));
             return;
         }
@@ -64,9 +64,9 @@ public class ModeCommand {
             if (empty) {
                 channel.modes().bans().forEach(
                         mask -> user.send(Message.RPL_BANLIST.client(user.info())
-                                                             .addFormat("channel", target)
+                                                             .channel(channel)
                                                              .addFormat("mask", mask)));
-                user.send(Message.RPL_ENDOFBANLIST.client(user.info()).addFormat("channel", target));
+                user.send(Message.RPL_ENDOFBANLIST.client(user.info()).channel(channel));
                 return false;
             }
             return true;
@@ -76,9 +76,9 @@ public class ModeCommand {
                 channel.modes().except().forEach(
                         mask -> user.send(
                                 Message.RPL_EXCEPTLIST.client(user.info())
-                                                      .addFormat("channel", target)
+                                                      .channel(channel)
                                                       .addFormat("mask", mask)));
-                user.send(Message.RPL_ENDOFEXCEPTLIST.client(user.info()).addFormat("channel", target));
+                user.send(Message.RPL_ENDOFEXCEPTLIST.client(user.info()).channel(channel));
                 return false;
             }
             return true;
@@ -88,9 +88,9 @@ public class ModeCommand {
                 channel.modes().invEx().forEach(
                         mask -> user.send(
                                 Message.RPL_INVITELIST.client(user.info())
-                                                      .addFormat("channel", target)
+                                                      .channel(channel)
                                                       .addFormat("mask", mask)));
-                user.send(Message.RPL_ENDOFINVITELIST.client(user.info()).addFormat("channel", target));
+                user.send(Message.RPL_ENDOFINVITELIST.client(user.info()).channel(channel));
                 return false;
             }
             return true;
@@ -99,15 +99,23 @@ public class ModeCommand {
         Map<Character, Boolean> map = channel.modes().apply(modeString, modeArguments, onChar);
         if (!map.isEmpty()) {
             channel.broadcast(
-                    ":%s MODE %s %s %s".formatted(user.info().format(), target, formatNewMode(map), modeArguments));
+                    ":%s MODE %s %s %s".formatted(user.info().format(), target, formatNewMode(map), modeArguments).stripTrailing());
         }
     }
 
     private String formatNewMode(Map<Character, Boolean> diff) {
         List<Character> added   = diff.keySet().stream().filter(diff::get).toList();
         List<Character> removed = diff.keySet().stream().filter(Predicate.not(diff::get)).toList();
-        return (added.isEmpty() ? "" : "+" + added.stream().map(c -> c + "").collect(Collectors.joining())) +
-               (removed.isEmpty() ? "" : "-" + removed.stream().map(c -> c + "").collect(Collectors.joining()));
+        return added.stream()
+                    .map(c -> c + "")
+                    .collect(Collectors.joining("", "+", "\0"))
+                    .replaceFirst("\\+\0", "")
+                    .replace("\0", "") +
+               removed.stream()
+                      .map(c -> c + "")
+                      .collect(Collectors.joining("", "-", "\0"))
+                      .replaceFirst("-\0", "")
+                      .replace("\0", "");
     }
 
     private Predicate<Void> continue0(Runnable runnable) {

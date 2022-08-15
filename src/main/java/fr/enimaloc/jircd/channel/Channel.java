@@ -9,11 +9,9 @@ import java.util.stream.Collectors;
 public class Channel {
     private final String            name;
     private final ChannelModes      modes;
-    private final List<User>        bans;
     private final List<User>        users;
     private final Map<User, String> prefix;
     private final long              createdAt;
-    private       String            password;
     private       Topic             topic;
 
     public Channel(User creator) {
@@ -25,33 +23,21 @@ public class Channel {
     }
 
     public Channel(User creator, String name, Topic topic) {
-        this(creator, name, topic, new ChannelModes(
-                new ArrayList<>(),
-                new ArrayList<>(),
-                new ArrayList<>(),
-                null,
-                0,
-                false,
-                false,
-                false,
-                false,
-                false
-        ));
+        this(creator, name, topic, new ChannelModes());
     }
 
     public Channel(User creator, String name, Topic topic, ChannelModes modes) {
-        this(creator, name, topic, modes, new ArrayList<>(), new ArrayList<>(), new HashMap<>(),
+        this(creator, name, topic, modes, new ArrayList<>(), new HashMap<>(),
              System.currentTimeMillis() / 1000);
     }
 
     public Channel(
-            User creator, String name, Topic topic, ChannelModes modes, List<User> bans, List<User> users,
+            User creator, String name, Topic topic, ChannelModes modes, List<User> users,
             Map<User, String> prefix, long createdAt
     ) {
         this.name   = name;
         this.topic  = topic;
         this.modes  = modes;
-        this.bans   = bans;
         this.users  = users;
         this.prefix = prefix;
         this.prefix.put(creator, "~");
@@ -91,21 +77,21 @@ public class Channel {
         user.modifiableChannels().add(this);
         this.modifiableUsers().add(user);
         broadcast(user.info().format(), Message.CMD_JOIN.rawFormat(name()));
-        topic().ifPresent(topic ->
+        topic().ifPresent(topic0 ->
                                   user.send(
                                           Message.RPL_TOPIC.client(user.info())
-                                                           .addFormat("channel", name())
-                                                           .addFormat("topic", topic.topic())));
+                                                           .channel(this)
+                                                           .addFormat("topic", topic0.topic())));
 
         user.send(Message.RPL_NAMREPLY.client(user.info())
                                       .addFormat("symbol", modes().secret() ? "@" : "=")
-                                      .addFormat("channel", name())
+                                      .channel(this)
                                       .addFormat("nicknames", users()
                                               .stream()
                                               .map(u -> prefix(u) + u.modes().prefix() +
                                                         u.info().nickname())
                                               .collect(Collectors.joining(" "))));
-        user.send(Message.RPL_ENDOFNAMES.client(user.info()).addFormat("channel", name()));
+        user.send(Message.RPL_ENDOFNAMES.client(user.info()).channel(this));
     }
 
     public void removeUser(User user) {

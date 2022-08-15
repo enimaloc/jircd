@@ -24,16 +24,16 @@ public class PartCommand {
             channelsNames[0] = channelsRaw;
         }
         for (String channelName : channelsNames) {
-            if (!Regex.CHANNEL.matcher(channelName).matches()) {
-                user.send(Message.ERR_NOSUCHCHANNEL.client(user.info()).addFormat("channel", channelName));
-                continue;
-            }
             Optional<Channel> channelOpt = user.channels()
                                                .stream()
                                                .filter(channel -> channel.name().equals(channelName))
                                                .findFirst();
-            if (channelOpt.isEmpty()) {
-                user.send(Message.ERR_NOTONCHANNEL.client(user.info()).addFormat("channel", channelName));
+            if (!Regex.CHANNEL.matcher(channelName).matches() || channelOpt.isEmpty()) {
+                if (!Regex.CHANNEL.matcher(channelName).matches()) {
+                    user.send(Message.ERR_NOSUCHCHANNEL.client(user.info()).channel(channelName));
+                } else {
+                    user.send(Message.ERR_NOTONCHANNEL.client(user.info()).channel(channelName));
+                }
                 continue;
             }
             Channel channelObj = channelOpt.get();

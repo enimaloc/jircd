@@ -70,7 +70,7 @@ public class UserModes {
                 case 'i' -> invisible(add);
                 case 'o' -> oper(false);
                 case 'O' -> localOper(false);
-//                    case 'r' -> registered(add);
+//                    case 'r' -> registered(add); TODO
                 case 'w' -> wallops(add);
                 default -> onUnknown.run();
             }

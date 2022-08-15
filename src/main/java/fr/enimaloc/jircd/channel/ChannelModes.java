@@ -13,28 +13,21 @@ public final class ChannelModes {
     private int          limit;
     private boolean      moderate;
     private boolean      inviteOnly;
-    private boolean      secret;
-    private boolean      _protected;
-    private boolean      noExternalMessage;
+    private boolean secret;
+    private boolean protected0;
+    private boolean noExternalMessage;
 
-    public ChannelModes(
-            List<String> except, List<String> bans, List<String> invEx, String password, int limit,
-            boolean moderate,
-            boolean inviteOnly,
-            boolean secret,
-            boolean _protected,
-            boolean noExternalMessage
-    ) {
-        this.except            = except == null ? new ArrayList<>() : except;
-        this.bans              = bans == null ? new ArrayList<>() : bans;
-        this.invEx             = invEx == null ? new ArrayList<>() : invEx;
-        this.password          = password;
-        this.limit             = limit;
-        this.moderate          = moderate;
-        this.inviteOnly        = inviteOnly;
-        this.secret            = secret;
-        this._protected        = _protected;
-        this.noExternalMessage = noExternalMessage;
+    public ChannelModes() {
+        this.except            = new ArrayList<>();
+        this.bans              = new ArrayList<>();
+        this.invEx             = new ArrayList<>();
+        this.password          = null;
+        this.limit             = 0;
+        this.moderate          = false;
+        this.inviteOnly        = false;
+        this.secret            = false;
+        this.protected0        = false;
+        this.noExternalMessage = false;
     }
 
     public Optional<String> password() {
@@ -53,20 +46,24 @@ public final class ChannelModes {
         return secret;
     }
 
-    public void password(String password) {
+    public ChannelModes password(String password) {
         this.password = password == null || password.isEmpty() || password.isBlank() ? null : password;
+        return this;
     }
 
-    public void limit(@Range(from = 0, to = Integer.MAX_VALUE) int limit) {
+    public ChannelModes limit(@Range(from = 0, to = Integer.MAX_VALUE) int limit) {
         this.limit = limit;
+        return this;
     }
 
-    public void inviteOnly(boolean inviteOnly) {
+    public ChannelModes inviteOnly(boolean inviteOnly) {
         this.inviteOnly = inviteOnly;
+        return this;
     }
 
-    public void secret(boolean secret) {
+    public ChannelModes secret(boolean secret) {
         this.secret = secret;
+        return this;
     }
 
     public List<String> bans() {
@@ -82,12 +79,12 @@ public final class ChannelModes {
         return this;
     }
 
-    public boolean _protected() {
-        return _protected;
+    public boolean protected0() {
+        return protected0;
     }
 
-    public ChannelModes _protected(boolean _protected) {
-        this._protected = _protected;
+    public ChannelModes protected0(boolean protected0) {
+        this.protected0 = protected0;
         return this;
     }
 
@@ -115,7 +112,7 @@ public final class ChannelModes {
                 (inviteOnly() ? "i" : "") +
                 (!invEx().isEmpty() ? "I" : "") +
                 (moderate() ? "m" : "") +
-                (_protected() ? "t" : "") +
+                (protected0() ? "t" : "") +
                 (noExternalMessage() ? "n" : "") +
                 (secret() ? "s" : "") +
                 (limit().isPresent() ? "l" : "") +
@@ -136,7 +133,7 @@ public final class ChannelModes {
             boolean moderate = ChannelModes.this.moderate;
             boolean inviteOnly = ChannelModes.this.inviteOnly;
             boolean secret = ChannelModes.this.secret;
-            boolean _protected = ChannelModes.this._protected;
+            boolean protected0 = ChannelModes.this.protected0;
             boolean noExternalMessage = ChannelModes.this.noExternalMessage;
         };
         for (char mode : rawMode.toCharArray()) {
@@ -170,7 +167,7 @@ public final class ChannelModes {
                                 () -> ref.secret = ref.add,
                                 () -> ref.break0 = !onChar.getOrDefault(mode, unused -> true).test(null));
                 case 't' -> and(() -> result.put(mode, ref.add),
-                                () -> ref._protected = ref.add,
+                                () -> ref.protected0 = ref.add,
                                 () -> ref.break0 = !onChar.getOrDefault(mode, unused -> true).test(null));
                 case 'n' -> and(() -> result.put(mode, ref.add),
                                 () -> ref.noExternalMessage = ref.add,
@@ -186,7 +183,7 @@ public final class ChannelModes {
         this.moderate          = ref.moderate;
         this.inviteOnly        = ref.inviteOnly;
         this.secret            = ref.secret;
-        this._protected        = ref._protected;
+        this.protected0        = ref.protected0;
         this.noExternalMessage = ref.noExternalMessage;
         return result;
     }

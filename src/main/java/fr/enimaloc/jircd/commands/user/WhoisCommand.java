@@ -36,13 +36,12 @@ public class WhoisCommand {
               .map(msg -> msg.addFormat("nick", nick))
               .map(msg -> msg.client(user.info()))
               .ifPresent(user::send);
-//         TODO: 23/07/2022 implement certificate tls before
-//        if (target.modes().oper() || target.equals(user)) {
+//        TODO: 23/07/2022 implement certificate tls before
+//         if (target.modes().oper() || target.equals(user)) {
 //            user.send(Message.RPL_WHOISCERTFP.client(user.info())
 //                                             .addFormat("nick", target.info().nickname())
 //                                             .addFormat("fingerprint", target.info().fingerprint()));
-//
-//        }
+//         }
 
         if (target.modes().registered()) {
             user.send(Message.RPL_WHOISREGNICK.client(user.info())
@@ -71,15 +70,15 @@ public class WhoisCommand {
                                                                         .map(Channel::name)
                                                                         .collect(Collectors.joining(" "))));
 //         TODO: 20/07/2022 What's that?
-//        user.send(Message.RPL_WHOISSPECIAL.client(user.info())
+//          user.send(Message.RPL_WHOISSPECIAL.client(user.info())
 //                                          .addFormat("nick", target.info().nickname())
 //                                          .addFormat("special", ""));
 //         TODO: 20/07/2022 What's condition for reply this message?
-//        user.send(Message.RPL_WHOISACCOUNT.client(user.info())
+//          user.send(Message.RPL_WHOISACCOUNT.client(user.info())
 //                                        .addFormat("nick", target.info().nickname())
 //                                        .addFormat("account", ""));
 //         TODO: 20/07/2022 See todo of RPL_WHOISACTUALLY
-//        user.send(Message.RPL_WHOISACTUALLY.client(user.info())
+//          user.send(Message.RPL_WHOISACTUALLY.client(user.info())
 //                                           .addFormat("nick", target.info().nickname())
 //                                           .addFormat("actually", ""));
         user.send(Message.RPL_WHOISHOST.client(user.info())

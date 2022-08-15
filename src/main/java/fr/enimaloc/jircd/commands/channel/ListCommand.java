@@ -1,11 +1,11 @@
 package fr.enimaloc.jircd.commands.channel;
 
+import fr.enimaloc.enutils.classes.NumberUtils;
 import fr.enimaloc.jircd.channel.Channel;
+import fr.enimaloc.jircd.commands.Command;
 import fr.enimaloc.jircd.message.Mask;
 import fr.enimaloc.jircd.message.Message;
-import fr.enimaloc.jircd.commands.Command;
 import fr.enimaloc.jircd.user.User;
-import fr.enimaloc.enutils.classes.NumberUtils;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -62,10 +62,13 @@ public class ListCommand {
         for (String e : eList) {
             char[] chars       = e.toCharArray();
             int    i           = 0;
-            char   identifier  = chars[i] != '<' && chars[i] != '>' ? Character.toUpperCase(chars[i++]) : '\u0000'; // ignored for now
+            char   identifier  = chars[i] != '<' && chars[i] != '>'
+                    ? Character.toUpperCase(chars[i++])
+                    : '\u0000'; // ignored for now
             char   comparaison = Character.toUpperCase(chars[i++]);
             int    b           = NumberUtils.getSafe(e.substring(i), Integer.class).orElse(Integer.MIN_VALUE);
 
+            // TODO: 15/08/2022 Complete this part
             predicate = switch (comparaison) {
                 case '>' -> switch (identifier) {
 //                    case 'C' -> predicate.and(channel -> channel.)
@@ -96,9 +99,11 @@ public class ListCommand {
             user.server()
                 .channels()
                 .stream()
-                .filter(predicate.and(channel -> new Mask("*"+channelName+"*").toPattern().matcher(channel.name()).matches()))
+                .filter(predicate.and(channel -> new Mask("*" + channelName + "*").toPattern()
+                                                                                  .matcher(channel.name())
+                                                                                  .matches()))
                 .map(channel -> Message.RPL_LIST.client(user.info())
-                                                .addFormat("channel", channel.name())
+                                                .channel(channel)
                                                 .addFormat("client count", channel.users().size())
                                                 .addFormat("topic", channel.topic()
                                                                            .orElse(new Channel.Topic("", null))
