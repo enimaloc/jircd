@@ -1,27 +1,50 @@
 plugins {
     id 'java'
+    id "com.github.johnrengelman.shadow" version "7.1.0"
+    id "org.sonarqube" version "3.3"
 }
 
-group 'com.github.enimaloc'
-version '1.0-SNAPSHOT'
+sonarqube {
+    properties {
+        property "sonar.projectKey", "enimaloc_jircd"
+    }
+}
+
+group 'fr.enimaloc'
+version new File("version.txt").text
 
 repositories {
     mavenCentral()
-    jcenter()
+    maven { url "https://m2.enimaloc.fr/releases/" }
 }
 
 dependencies {
-    implementation 'org.slf4j:slf4j-api:1.7.31'
+    implementation 'fr.enimaloc.enutils:classes:0.5.0'
 
-    implementation 'ch.qos.logback:logback-core:1.2.3'
-    implementation 'ch.qos.logback:logback-classic:1.2.3'
+    implementation 'com.electronwill.night-config:toml:3.6.5'
+    implementation 'com.electronwill.night-config:json:3.6.5'
 
-    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.7.2'
-    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.7.2'
-    testImplementation 'org.junit.jupiter:junit-jupiter-params:5.7.2'
-    testImplementation "org.mockito:mockito-core:3.11.2"
+    implementation 'org.slf4j:slf4j-api:1.7.36'
+
+    implementation 'ch.qos.logback:logback-core:1.2.11'
+    implementation 'ch.qos.logback:logback-classic:1.2.11'
+
+    implementation 'io.prometheus:simpleclient:0.15.0'
+    implementation 'io.prometheus:simpleclient_httpserver:0.15.0'
+    implementation 'io.prometheus:simpleclient_hotspot:0.15.0'
+
+    implementation 'com.github.davidmoten:geo:0.8.0'
+    implementation 'org.jetbrains:annotations:20.1.0'
+
+    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.8.2'
+    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.8.2'
+    testImplementation 'org.junit.jupiter:junit-jupiter-params:5.8.2'
+    testImplementation 'org.mockito:mockito-core:4.2.0'
 }
 
 test {
+    reports {
+        junitXml.enabled = true
+    }
     useJUnitPlatform()
 }

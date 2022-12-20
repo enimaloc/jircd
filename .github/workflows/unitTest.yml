@@ -1,0 +1,30 @@
+on:
+  pull_request:
+  push:
+jobs:
+  build-test:
+    name: Build & Test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+      - name: Set up JDK 17
+        uses: actions/setup-java@v3
+        with:
+          java-version: 17
+          distribution: temurin
+      - name: Build and Run Tests
+        run: ./gradlew :test -i # execute your tests generating test results
+      - name: Test Report
+        uses: phoenix-actions/test-reporting@v8
+        id: test-report               # Set ID reference for step
+        if: success() || failure()    # run this step even if previous step failed
+        with:
+          name: JUnit Tests           # Name of the check run which will be created
+          reporter: java-junit        # Format of test results
+          path: '**/build/test-results/test/TEST-*.xml'
+          max-annotations: 50
+
+      - name: Read output variables
+        run: |
+          echo "url is ${{ steps.test-report.outputs.runHtmlUrl }}"
