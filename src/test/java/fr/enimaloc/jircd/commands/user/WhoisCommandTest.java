@@ -1,8 +1,14 @@
 package fr.enimaloc.jircd.commands.user;
 
 import fr.enimaloc.jircd.user.User;
+
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
 import java.net.SocketException;
+import java.net.URL;
 import java.util.Optional;
+
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -112,7 +118,15 @@ class WhoisCommandTest extends UserCommandBase {
         } catch (SocketException e) {
             fail("Failed to increase timeout", e);
         }
-        String torIp = "93.95.230.253";
+        String torIp = null;
+        try {
+            torIp = new BufferedReader(new InputStreamReader(new URL("https://check.torproject.org/torbulkexitlist").openStream()))
+                    .lines()
+                    .findAny()
+                    .orElseThrow();
+        } catch (IOException e) {
+            fail("Failed to get tor exit node", e);
+        }
 
         addConnections(1);
         connections[4].createUser("WiZ", "Jarko Oikarinen");
