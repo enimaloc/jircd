@@ -1,11 +1,12 @@
 package fr.enimaloc.jircd.commands.messages;
 
 import fr.enimaloc.jircd.channel.Channel;
-import fr.enimaloc.jircd.message.Mask;
 import fr.enimaloc.jircd.message.Message;
 import fr.enimaloc.jircd.message.Regex;
 import fr.enimaloc.jircd.commands.Command;
 import fr.enimaloc.jircd.user.User;
+
+import java.util.ArrayList;
 import java.util.Optional;
 import java.util.function.Predicate;
 
@@ -72,11 +73,10 @@ public class PrivmsgCommand {
     }
 
     private void executeUser(User user, String target, String trailing) {
-        Optional<User> targetOpt = user.server()
-                                       .users()
-                                       .stream()
-                                       .filter(u -> u.info().format().equals(target))
-                                       .findFirst();
+        Optional<User> targetOpt = new ArrayList<>(user.server().users())
+                .stream()
+                .filter(u -> u.info().format().equals(target))
+                .findFirst();
         if (targetOpt.isEmpty()) {
             user.send(Message.ERR_NOSUCHNICK.client(user.info()).addFormat("nickname", target));
             return;

@@ -123,7 +123,7 @@ public class Channel {
     }
 
     public void broadcast(String message, Predicate<User> filter) {
-        users.parallelStream()
+        new ArrayList<>(users).stream()
              .filter(filter)
              .forEach(user -> user.send(message));
     }
