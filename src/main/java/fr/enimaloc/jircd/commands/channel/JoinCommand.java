@@ -31,7 +31,7 @@ public class JoinCommand {
         }
     }
 
-    private static void actionPerChannel(User user, Couple couple) {
+    private void actionPerChannel(User user, Couple couple) {
         if (!Regex.CHANNEL.matcher(couple.name()).matches()) {
             user.send(Message.ERR_NOSUCHCHANNEL.client(user.info()).channel(couple.name()));
             return;
@@ -57,7 +57,7 @@ public class JoinCommand {
         channelObj.addUser(user);
     }
 
-    private static Optional<Message> invalid(User user, Couple couple, Channel channelObj) {
+    private Optional<Message> invalid(User user, Couple couple, Channel channelObj) {
         Message error = null;
         if (user.channels().size() >= user.server().supportAttribute().channelAttribute().channelLen()) {
             error = Message.ERR_TOOMANYCHANNELS;
