@@ -75,7 +75,7 @@ public class ServerBase {
                 break;
             } catch (BindException ignored) {
                 int newPort = new Random().nextInt(1000) + 1024;
-                logger.warn("Port {} is currently used, replaced with {}", baseSettings.port(), newPort);
+                logger.warn("Port {} is currently used, replaced with {}", tmp.port(), newPort);
                 tmp = builder.port(newPort).build();
             } catch (IOException e) {
                 fail("Can't start IRCServer", e);
